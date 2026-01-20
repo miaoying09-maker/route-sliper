@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>UniUni 路线号+地址（App截图专用/切卡片/Google）</title>
+  <title>UniUni 路线号+地址（校准版/更准/Google）</title>
   <style>
     :root{ font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
     body{ margin:0; background:#f6f7fb; color:#111; }
-    .wrap{ max-width:900px; margin:0 auto; padding:12px; }
+    .wrap{ max-width:980px; margin:0 auto; padding:12px; }
     .sticky{
       position:sticky; top:0; z-index:10;
       background:rgba(246,247,251,.96); backdrop-filter: blur(10px);
@@ -19,13 +19,12 @@
     .btn{
       border:1px solid #d5d9e6; background:#fff;
       padding:14px 14px; border-radius:16px;
-      cursor:pointer; font-size:16px; font-weight:900;
+      cursor:pointer; font-size:16px; font-weight:950;
     }
     .btn.primary{ background:#111; color:#fff; border-color:#111; }
     .btn.warn{ background:#fff6e5; border-color:#ffd69a; }
     .btn.danger{ background:#fff3f3; border-color:#ffd3d3; color:#a40000; }
     .btn:disabled{ opacity:.55; cursor:not-allowed; }
-
     .pill{ font-size:13px; padding:4px 10px; border-radius:999px; border:1px solid #e6e8ef; background:#fff; }
     .hint{ font-size:12px; color:#666; line-height:1.35; }
     .progress{ height:8px; background:#e9ecf7; border-radius:999px; overflow:hidden; margin-top:10px; }
@@ -53,7 +52,7 @@
     .smallbtn{
       border:1px solid #d5d9e6; background:#fff;
       padding:10px 12px; border-radius:14px;
-      cursor:pointer; font-size:14px; font-weight:900;
+      cursor:pointer; font-size:14px; font-weight:950;
     }
     .smallbtn.primary{ background:#111; color:#fff; border-color:#111; }
     .smallbtn.gray{ background:#f2f3f7; }
@@ -71,6 +70,32 @@
       margin-top:8px;
       background:#fff;
     }
+
+    /* 校准面板 */
+    .overlayWrap{
+      position:fixed; inset:0; background:rgba(0,0,0,.55);
+      display:none; align-items:center; justify-content:center; z-index:9999;
+      padding:12px;
+    }
+    .overlay{
+      width:min(980px, 100%);
+      background:#fff; border-radius:18px; overflow:hidden;
+      border:1px solid #e6e8ef;
+    }
+    .overlayTop{
+      padding:10px 12px; border-bottom:1px solid #e6e8ef;
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .canvasWrap{ position:relative; background:#111; }
+    canvas{ width:100%; height:auto; display:block; }
+    .rect{
+      position:absolute; border:3px solid #00b7ff; border-radius:10px;
+      box-shadow:0 0 0 9999px rgba(0,0,0,.15) inset;
+      pointer-events:none;
+    }
+    .rect.route{ border-color:#00c853; }
+    .rect.addr{ border-color:#ff6d00; }
   </style>
 </head>
 <body>
@@ -87,22 +112,24 @@
     <div class="row" style="margin-top:10px;">
       <span class="pill" id="stat">总数 0｜未送 0｜已送 0</span>
       <span class="pill" id="job">待处理 0</span>
+      <span class="pill" id="tplState">模板：未校准</span>
     </div>
     <div class="progress"><div class="bar" id="bar"></div></div>
 
     <div class="hint" style="margin-top:10px;">
-      ✅ 适配：<b>UniUni App 深色截图</b>（一张图多张卡片）。<br>
-      只识别：<b>路线号（1-4位） + 地址</b>（不识别单号/姓名）。
+      ✅ 最稳方式：先点“校准一次”（10秒）→ 以后每天导入 6 张截图都会很准。<br>
+      只识别：<b>路线号（1–4位） + 地址</b>（不需要单号/姓名）。
     </div>
   </div>
 
   <div class="card">
-    <div style="font-weight:950; font-size:18px;">批量导入（自动切卡片）</div>
-    <div class="hint" style="margin-top:6px;">你这类截图通常一屏 4 张卡片；如果你截图时显示 5 张/6 张，把下面“卡片数”改一下。</div>
+    <div style="font-weight:950; font-size:18px;">导入</div>
 
     <div class="row" style="margin-top:12px;">
       <input type="file" id="files" accept="image/*" multiple />
       <button class="btn primary" id="btnImport">批量导入</button>
+      <button class="btn" id="btnCalibrate">校准一次（更准）</button>
+      <button class="btn" id="btnResetTpl">重置模板</button>
     </div>
 
     <div class="row" style="margin-top:12px;">
@@ -124,21 +151,51 @@
   <div class="list" id="list"></div>
 </div>
 
+<!-- 校准弹层 -->
+<div class="overlayWrap" id="overlayWrap">
+  <div class="overlay">
+    <div class="overlayTop">
+      <div style="font-weight:950;">
+        校准：请在<b>同一张卡片</b>里先框<b style="color:#00c853;">路线号数字</b>，再框<b style="color:#ff6d00;">地址行</b>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="btnTplSave" disabled>保存模板</button>
+        <button class="btn" id="btnTplCancel">取消</button>
+      </div>
+      <div class="hint" id="calHint" style="width:100%; margin-top:6px;">
+        第一步：用手指拖动框出左侧“大号数字”（路线号）
+      </div>
+    </div>
+    <div class="canvasWrap" id="canvasWrap">
+      <canvas id="calCanvas"></canvas>
+      <div class="rect route" id="rectRoute" style="display:none;"></div>
+      <div class="rect addr" id="rectAddr" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
-  const LS_KEY = "uniuni_app_dark_split_v1";
+  const LS_KEY = "uniuni_items_v_cal";
+  const LS_TPL = "uniuni_tpl_v_cal";
 
   let items = [];   // {id, route, address, checked, createdAt}
   let queue = [];
   let processing = false;
   let lastActionStack = [];
 
+  // 模板：相对“单张卡片区域”的矩形（0-1）
+  // { routeRect:{x,y,w,h}, addrRect:{x,y,w,h} }
+  let tpl = null;
+
   const el = id => document.getElementById(id);
   const listEl = el("list");
 
   function uid(){ return Math.random().toString(36).slice(2,9) + Date.now().toString(36); }
-  function save(){ localStorage.setItem(LS_KEY, JSON.stringify(items)); }
-  function load(){ try{ items = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }catch{ items = []; } }
+  function saveItems(){ localStorage.setItem(LS_KEY, JSON.stringify(items)); }
+  function loadItems(){ try{ items = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }catch{ items = []; } }
+  function saveTpl(){ localStorage.setItem(LS_TPL, JSON.stringify(tpl)); }
+  function loadTpl(){ try{ tpl = JSON.parse(localStorage.getItem(LS_TPL) || "null"); }catch{ tpl = null; } }
 
   function esc(s){
     return (s||"").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
@@ -148,7 +205,6 @@
   function navUrlGoogle(dest){
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=driving`;
   }
-
   async function copyText(text){
     try{ await navigator.clipboard.writeText(text); }
     catch{
@@ -158,18 +214,17 @@
     }
   }
 
-  // ---------- 路线号：只认 1~4 位 ----------
+  // ---------- 核心：路线号/地址提取 ----------
   function extractRoute(text){
     const t = (text || "").replace(/\s+/g, " ").trim();
+    // 只认 1-4 位
     let m = t.match(/\b(\d{1,4})\b/);
     if (m) return m[1];
     const digits = (t.match(/\d/g) || []).join("");
     if (digits.length >= 1 && digits.length <= 4) return digits;
-    if (digits.length > 4) return digits.slice(0,4);
     return "";
   }
 
-  // 地址识别（尽量选“像地址”的那行）
   function looksLikeAddressLine(s){
     const t = (s||"").trim();
     if(t.length < 8) return false;
@@ -180,11 +235,7 @@
 
   function extractAddress(text){
     const lines = (text||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-
-    // 优先找像地址的一行
     let addr = lines.find(looksLikeAddressLine) || "";
-
-    // 如果下一行像城市州，就拼上
     if(addr){
       const i = lines.indexOf(addr);
       const next = lines[i+1] || "";
@@ -194,15 +245,11 @@
       }
       return norm(addr);
     }
-
-    // 兜底：含门牌号的最长行
     const withNo = lines.filter(l => /\b\d{1,6}\b/.test(l));
     if(withNo.length){
       withNo.sort((a,b)=>b.length-a.length);
       return norm(withNo[0]);
     }
-
-    // 最后兜底：最长行
     if(lines.length){
       lines.sort((a,b)=>b.length-a.length);
       return norm(lines[0]);
@@ -217,11 +264,10 @@
       id: uid(),
       route: (route && route.trim()) ? route.trim() : "--",
       address,
-      checked: false,
+      checked:false,
       createdAt: Date.now()
     });
   }
-
   function dedupe(){
     const seen = new Set();
     const out = [];
@@ -234,6 +280,7 @@
     items = out;
   }
 
+  // ---------- UI ----------
   function updateTop(){
     const total = items.length;
     const done = items.filter(x=>x.checked).length;
@@ -241,13 +288,14 @@
     el("stat").textContent = `总数 ${total}｜未送 ${todo}｜已送 ${done}`;
     el("job").textContent = `待处理 ${queue.length}${processing ? "（识别中）" : ""}`;
     el("bar").style.width = total ? Math.round(done/total*100) + "%" : "0%";
+    el("tplState").textContent = tpl ? "模板：已校准 ✅" : "模板：未校准";
   }
 
   function render(){
     updateTop();
     listEl.innerHTML = "";
     if(!items.length){
-      listEl.innerHTML = `<div class="card"><div class="hint">还没有数据。请选择 UniUni App 的原始截图 → 批量导入。</div></div>`;
+      listEl.innerHTML = `<div class="card"><div class="hint">还没有数据。建议先点“校准一次”，再批量导入截图。</div></div>`;
       return;
     }
 
@@ -268,7 +316,7 @@
             <button class="smallbtn" data-act="edit" data-id="${it.id}">修改</button>
           </div>
           <div class="addr">${esc(it.address)}</div>
-          <div class="sub">路线号 “--” 时点“修改”补这一条即可。</div>
+          <div class="sub">路线号如果是 “--”，点“修改”补这一条即可。</div>
 
           <div id="edit-${it.id}" style="display:none;">
             <input class="edit" placeholder="路线号（1-4位）" value="${esc(it.route)}" data-k="route" data-id="${it.id}">
@@ -293,14 +341,14 @@
         if(act==="nav"){
           it.checked = true;
           lastActionStack.push(id);
-          save(); render();
+          saveItems(); render();
           window.open(navUrlGoogle(it.address), "_blank");
         }else if(act==="copy"){
           await copyText(it.address);
         }else if(act==="toggle"){
           it.checked = !it.checked;
           lastActionStack.push(id);
-          save(); render();
+          saveItems(); render();
         }else if(act==="edit"){
           el("edit-"+id).style.display = "block";
         }else if(act==="cancel"){
@@ -311,7 +359,7 @@
           it.route = r || "--";
           it.address = norm(a);
           el("edit-"+id).style.display = "none";
-          save(); render();
+          saveItems(); render();
         }
       }, { once:true });
     });
@@ -323,40 +371,34 @@
     if(!next) return alert("没有未送的了（都已勾选）。");
     next.checked = true;
     lastActionStack.push(next.id);
-    save(); render();
+    saveItems(); render();
     window.open(navUrlGoogle(next.address), "_blank");
   });
-
   el("btnCopyNext").addEventListener("click", async ()=>{
     const next = items.find(x=>!x.checked);
     if(!next) return alert("没有未送的了（都已勾选）。");
     await copyText(next.address);
     next.checked = true;
     lastActionStack.push(next.id);
-    save(); render();
+    saveItems(); render();
     alert("已复制并自动勾选。");
   });
-
   el("btnUndo").addEventListener("click", ()=>{
     const lastId = lastActionStack.pop();
     if(!lastId) return alert("没有可撤销的操作。");
     const it = items.find(x=>x.id===lastId);
     if(!it) return;
     it.checked = false;
-    save(); render();
+    saveItems(); render();
   });
-
   el("btnClear").addEventListener("click", ()=>{
     if(!confirm("确定清空全部数据？")) return;
-    items = [];
-    queue = [];
-    processing = false;
-    lastActionStack = [];
-    save(); render();
+    items=[]; queue=[]; processing=false; lastActionStack=[];
+    saveItems(); render();
   });
 
-  // ---------- 深色模式增强：自动判断是否需要反色 ----------
-  async function imgToCanvas(blob, scaleTarget=2000){
+  // ---------- 图像 & OCR ----------
+  async function imgToCanvas(blob, scaleTarget=2200){
     const img = new Image();
     img.decoding = "async";
     const url = URL.createObjectURL(blob);
@@ -364,7 +406,7 @@
     await img.decode();
     URL.revokeObjectURL(url);
 
-    const scale = Math.min(2.4, Math.max(1.4, scaleTarget / Math.max(img.width, img.height)));
+    const scale = Math.min(2.6, Math.max(1.4, scaleTarget / Math.max(img.width, img.height)));
     const w = Math.round(img.width * scale);
     const h = Math.round(img.height * scale);
 
@@ -375,40 +417,44 @@
     return { cv, ctx, w, h };
   }
 
+  function cropCanvas(srcCanvas, sx, sy, sw, sh){
+    const cv = document.createElement("canvas");
+    cv.width = Math.max(1, Math.round(sw));
+    cv.height = Math.max(1, Math.round(sh));
+    const ctx = cv.getContext("2d");
+    ctx.drawImage(srcCanvas, sx, sy, sw, sh, 0, 0, cv.width, cv.height);
+    return cv;
+  }
+
   function getAvgLuma(imData){
     const d = imData.data;
-    let sum=0, cnt=0;
-    // 抽样
+    let sum=0,cnt=0;
     for(let i=0;i<d.length;i+=80*4){
       const r=d[i], g=d[i+1], b=d[i+2];
-      const y = 0.299*r + 0.587*g + 0.114*b;
-      sum += y; cnt++;
+      sum += 0.299*r + 0.587*g + 0.114*b;
+      cnt++;
     }
     return sum / Math.max(1,cnt);
   }
 
-  function enhanceForOCR(cv, ctx, mode){
-    // mode: "route" or "addr"
+  function enhanceForOCR(cv, mode){
+    const ctx = cv.getContext("2d", { willReadFrequently:true });
     const im = ctx.getImageData(0,0,cv.width,cv.height);
     const d = im.data;
 
-    // 判断深色：平均亮度很低则反色（让字变黑、底变白）
     const avg = getAvgLuma(im);
-    const dark = avg < 120;
+    const dark = avg < 130; // 深色截图基本会触发
 
-    // 对比度（路线号更强一点）
-    const contrast = (mode==="route") ? 1.55 : 1.35;
-
+    const contrast = (mode==="route") ? 1.65 : 1.35;
     for(let i=0;i<d.length;i+=4){
       let y = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
-      if(dark) y = 255 - y;              // 关键：深色反色
+      if(dark) y = 255 - y; // 关键：反色
       y = (y - 128) * contrast + 128;
       y = Math.max(0, Math.min(255, y));
       d[i]=d[i+1]=d[i+2]=y;
     }
 
-    // 轻二值化（路线号更狠，地址更轻）
-    const thr = (mode==="route") ? 165 : 175;
+    const thr = (mode==="route") ? 165 : 178; // 路线号更狠
     for(let i=0;i<d.length;i+=4){
       const v=d[i];
       const bw = v < thr ? 0 : 255;
@@ -416,27 +462,17 @@
     }
 
     ctx.putImageData(im,0,0);
+    return cv;
   }
 
-  function cropToBlob(canvas, sx, sy, sw, sh){
-    const cv = document.createElement("canvas");
-    cv.width = Math.max(1, Math.round(sw));
-    cv.height = Math.max(1, Math.round(sh));
-    const ctx = cv.getContext("2d");
-    ctx.drawImage(canvas, sx, sy, sw, sh, 0, 0, cv.width, cv.height);
-    return new Promise(res => cv.toBlob(res, "image/png", 1.0));
-  }
-
-  // ---------- 自动切卡片（按卡片数均分更稳） ----------
-  // UniUni 这个界面：上面有顶部栏，下面有底部导航栏，中间是卡片列表
-  // 我们先裁掉“顶部+底部”，再把剩余区域按 cardsPerImage 均分
+  // 卡片区域：裁掉顶部/底部，再均分
   function getCardRegions(w, h, cardsPerImage){
-    const topCut = Math.round(h * 0.14);   // 顶部栏大概 14%
-    const botCut = Math.round(h * 0.10);   // 底部栏大概 10%
+    const topCut = Math.round(h * 0.14);
+    const botCut = Math.round(h * 0.10);
     const usableY = topCut;
     const usableH = Math.max(1, h - topCut - botCut);
 
-    const gap = Math.round(usableH * 0.02); // 预留小间隔（卡片之间）
+    const gap = Math.round(usableH * 0.02);
     const cardH = Math.floor((usableH - gap*(cardsPerImage-1)) / cardsPerImage);
 
     const regions = [];
@@ -448,26 +484,28 @@
     return regions;
   }
 
+  async function canvasToBlob(cv){
+    return new Promise(res => cv.toBlob(res, "image/png", 1.0));
+  }
+
+  // ---------- 批量导入（使用模板更准） ----------
   async function processQueue(){
     if(processing) return;
     processing = true;
     render();
 
-    let workerDigits = null;
-    let workerAddr = null;
+    let workerDigits=null, workerAddr=null;
 
     try{
       workerDigits = await Tesseract.createWorker("eng");
-      workerAddr = await Tesseract.createWorker("eng");
+      workerAddr   = await Tesseract.createWorker("eng");
 
-      // 路线号：数字模式，适合大数字/个位数
       await workerDigits.setParameters({
         tessedit_char_whitelist: "0123456789",
         preserve_interword_spaces: "1",
-        tessedit_pageseg_mode: 8
+        tessedit_pageseg_mode: 8   // 适合“一个数字块”
       });
 
-      // 地址：常用字符
       await workerAddr.setParameters({
         tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ,.-/#",
         preserve_interword_spaces: "1",
@@ -479,44 +517,42 @@
         const cardsPerImage = parseInt(el("cardsPerImage").value || "4", 10);
         const defaultCity = (el("defaultCity").value || "Pittsburgh, PA").trim();
 
-        el("hint").innerHTML = `<span class="hint">处理：${esc(f.name||"image")}（一张图按 ${cardsPerImage} 张卡片切开）…</span>`;
+        el("hint").innerHTML = `<span class="hint">识别中：${esc(f.name||"image")}（剩余 ${queue.length} 张）…</span>`;
         render();
 
-        // 原图转 canvas
-        const { cv, ctx, w, h } = await imgToCanvas(f, 2100);
+        const { cv, w, h } = await imgToCanvas(f, 2300);
+        const cardRegions = getCardRegions(w, h, cardsPerImage);
 
-        // 切卡片区域
-        const regions = getCardRegions(w, h, cardsPerImage);
+        for(const rg of cardRegions){
+          // 单张卡片 canvas
+          const cardCv = cropCanvas(cv, rg.x, rg.y, rg.w, rg.h);
 
-        for(const rg of regions){
-          // 每张卡片再切两块：左边路线号区 + 右边地址区
-          // 你的截图里路线号区大概占 40%，数字在卡片中部偏左
-          const leftW = Math.round(rg.w * 0.42);
-          const rightX = rg.x + leftW;
+          // 如果没校准，就用默认模板（能跑但没你校准准）
+          const useTpl = tpl || {
+            // 默认：路线号数字大约在左侧中部
+            routeRect:{ x:0.06, y:0.28, w:0.30, h:0.52 },
+            // 默认：地址在右侧靠上那一行
+            addrRect:{ x:0.42, y:0.18, w:0.55, h:0.55 }
+          };
 
-          // 路线号：裁左边 + 再裁中间高度（避免拿到上面的单号/下方“路线号”文字）
-          const routeCrop = await cropToBlob(cv,
-            rg.x,
-            rg.y + Math.round(rg.h * 0.28),
-            leftW,
-            Math.round(rg.h * 0.52)
+          // 按模板裁剪路线号、地址
+          const rr = useTpl.routeRect;
+          const ar = useTpl.addrRect;
+
+          const routeCv = cropCanvas(cardCv,
+            rr.x * cardCv.width, rr.y * cardCv.height,
+            rr.w * cardCv.width, rr.h * cardCv.height
           );
-          // 地址：裁右边（包含地址那一行）
-          const addrCrop = await cropToBlob(cv,
-            rightX,
-            rg.y + Math.round(rg.h * 0.18),
-            rg.w - leftW,
-            Math.round(rg.h * 0.60)
+          const addrCv = cropCanvas(cardCv,
+            ar.x * cardCv.width, ar.y * cardCv.height,
+            ar.w * cardCv.width, ar.h * cardCv.height
           );
 
-          // 为 OCR 增强（深色反色+二值化）
-          const { cv: rcv, ctx: rctx } = await imgToCanvas(routeCrop, 1400);
-          enhanceForOCR(rcv, rctx, "route");
-          const rBlob = await new Promise(res => rcv.toBlob(res, "image/png", 1.0));
+          enhanceForOCR(routeCv, "route");
+          enhanceForOCR(addrCv, "addr");
 
-          const { cv: acv, ctx: actx } = await imgToCanvas(addrCrop, 1600);
-          enhanceForOCR(acv, actx, "addr");
-          const aBlob = await new Promise(res => acv.toBlob(res, "image/png", 1.0));
+          const rBlob = await canvasToBlob(routeCv);
+          const aBlob = await canvasToBlob(addrCv);
 
           const rRes = await workerDigits.recognize(rBlob);
           const aRes = await workerAddr.recognize(aBlob);
@@ -530,14 +566,13 @@
             if(!hasState && !hasCityState) addr = `${addr}, ${defaultCity}`;
           }
 
-          // 有些卡片可能被截了一半（比如最上/最下），地址空就跳过
           if(addr) addItem(route, addr);
         }
       }
 
       dedupe();
-      save();
-      el("hint").innerHTML = `<span class="hint" style="color:#0a7a2f;">导入完成 ✅（如果卡片数不对，把“每张截图卡片数”改成 5 或 6 再试）</span>`;
+      saveItems();
+      el("hint").innerHTML = `<span class="hint" style="color:#0a7a2f;">完成 ✅（建议先校准一次，路线号会更稳）</span>`;
       render();
 
     }catch(e){
@@ -553,14 +588,179 @@
   }
 
   el("btnImport").addEventListener("click", ()=>{
+_toggle=>{
     const files = el("files").files;
     if(!files || !files.length) return alert("先选择 UniUni App 原始截图（可多选，约6张）。");
     queue = Array.from(files);
     processQueue();
   });
 
+  // ---------- 校准：框两下 ----------
+  const overlayWrap = el("overlayWrap");
+  const calCanvas = el("calCanvas");
+  const canvasWrap = el("canvasWrap");
+  const rectRoute = el("rectRoute");
+  const rectAddr  = el("rectAddr");
+  const calHint   = el("calHint");
+  let calImgCv = null;
+  let calStage = 0; // 0 route, 1 addr
+  let drag = null;  // {x0,y0,x1,y1}
+  let pickedRouteRect = null;
+  let pickedAddrRect = null;
+
+  function showRect(div, r){
+    div.style.display = "block";
+    div.style.left = r.x + "px";
+    div.style.top  = r.y + "px";
+    div.style.width  = r.w + "px";
+    div.style.height = r.h + "px";
+  }
+  function normRect(x0,y0,x1,y1){
+    const x = Math.min(x0,x1), y = Math.min(y0,y1);
+    const w = Math.abs(x1-x0), h = Math.abs(y1-y0);
+    return {x,y,w,h};
+  }
+
+  async function openCalibrate(file){
+    overlayWrap.style.display = "flex";
+    calStage = 0;
+    pickedRouteRect = null;
+    pickedAddrRect = null;
+    el("btnTplSave").disabled = true;
+    rectRoute.style.display = "none";
+    rectAddr.style.display = "none";
+    calHint.textContent = "第一步：用手指拖动框出左侧“大号数字”（路线号）";
+
+    // 用原图转 canvas（不做裁剪）
+    const { cv } = await imgToCanvas(file, 2200);
+    calImgCv = cv;
+
+    // 画到可见 canvas（适配显示尺寸）
+    const ctx = calCanvas.getContext("2d");
+    calCanvas.width = calImgCv.width;
+    calCanvas.height = calImgCv.height;
+    ctx.drawImage(calImgCv, 0, 0);
+  }
+
+  function getPointerPos(evt){
+    const rect = calCanvas.getBoundingClientRect();
+    const scaleX = calCanvas.width / rect.width;
+    const scaleY = calCanvas.height / rect.height;
+    const x = (evt.clientX - rect.left) * scaleX;
+    const y = (evt.clientY - rect.top) * scaleY;
+    return {x,y};
+  }
+
+  calCanvas.addEventListener("pointerdown", (e)=>{
+    if(!calImgCv) return;
+    calCanvas.setPointerCapture(e.pointerId);
+    const p = getPointerPos(e);
+    drag = { x0:p.x, y0:p.y, x1:p.x, y1:p.y };
+  });
+
+  calCanvas.addEventListener("pointermove", (e)=>{
+    if(!drag) return;
+    const p = getPointerPos(e);
+    drag.x1 = p.x; drag.y1 = p.y;
+    const r = normRect(drag.x0, drag.y0, drag.x1, drag.y1);
+
+    // 把画框显示在 overlay 上（需要换算成 CSS 像素）
+    const rect = calCanvas.getBoundingClientRect();
+    const sx = rect.width / calCanvas.width;
+    const sy = rect.height / calCanvas.height;
+
+    const cssR = { x: r.x*sx, y:r.y*sy, w:r.w*sx, h:r.h*sy };
+    if(calStage===0) showRect(rectRoute, cssR);
+    else showRect(rectAddr, cssR);
+  });
+
+  calCanvas.addEventListener("pointerup", (e)=>{
+    if(!drag) return;
+    const r = normRect(drag.x0, drag.y0, drag.x1, drag.y1);
+    drag = null;
+
+    // 太小就忽略
+    if(r.w < 20 || r.h < 20) return;
+
+    if(calStage===0){
+      pickedRouteRect = r;
+      calStage = 1;
+      calHint.textContent = "第二步：拖动框出右侧“地址那一行”（只要地址行就行）";
+    }else{
+      pickedAddrRect = r;
+      calHint.textContent = "完成 ✅ 现在点“保存模板”。以后导入会非常准。";
+      el("btnTplSave").disabled = false;
+    }
+  });
+
+  el("btnTplCancel").addEventListener("click", ()=>{
+    overlayWrap.style.display = "none";
+    calImgCv = null;
+  });
+
+  el("btnTplSave").addEventListener("click", ()=>{
+    if(!pickedRouteRect || !pickedAddrRect || !calImgCv) return;
+
+    // 保存为相对比例（相对“单张卡片区域”）
+    // 注意：你校准的是整张截图，我们会在识别时先切卡片，所以需要把整图框 -> 映射到“单卡片”的相对坐标。
+    // 处理方式：把整图分成 cardsPerImage 张卡片后，找到你框选所在的那张卡片，转为卡片内相对值。
+    const cardsPerImage = parseInt(el("cardsPerImage").value || "4", 10);
+    const w = calImgCv.width, h = calImgCv.height;
+    const cardRegions = getCardRegions(w, h, cardsPerImage);
+
+    function rectCenter(rc){ return { cx: rc.x + rc.w/2, cy: rc.y + rc.h/2 }; }
+    const c = rectCenter(pickedRouteRect);
+
+    // 找中心点落在哪张卡片
+    let card = cardRegions[0];
+    for(const rg of cardRegions){
+      if(c.cx>=rg.x && c.cx<=rg.x+rg.w && c.cy>=rg.y && c.cy<=rg.y+rg.h){ card = rg; break; }
+    }
+
+    function toRel(rc){
+      const x = (rc.x - card.x) / card.w;
+      const y = (rc.y - card.y) / card.h;
+      const ww = rc.w / card.w;
+      const hh = rc.h / card.h;
+      // clamp
+      return {
+        x: Math.max(0, Math.min(1, x)),
+        y: Math.max(0, Math.min(1, y)),
+        w: Math.max(0.01, Math.min(1, ww)),
+        h: Math.max(0.01, Math.min(1, hh)),
+      };
+    }
+
+    tpl = {
+      routeRect: toRel(pickedRouteRect),
+      addrRect: toRel(pickedAddrRect)
+    };
+    saveTpl();
+    overlayWrap.style.display = "none";
+    calImgCv = null;
+    render();
+    alert("模板已保存 ✅ 以后导入会更准！");
+  });
+
+  // 触发校准：用第一张图片
+  el("btnCalibrate").addEventListener("click", async ()=>{
+    const files = el("files").files;
+    if(!files || !files.length) {
+      return alert("先在“选择文件”里选一张 UniUni App 截图（只要1张），再点校准。");
+    }
+    await openCalibrate(files[0]);
+  });
+
+  el("btnResetTpl").addEventListener("click", ()=>{
+    if(!confirm("确定重置模板？（以后需要重新校准）")) return;
+    tpl = null;
+    localStorage.removeItem(LS_TPL);
+    render();
+  });
+
   // init
-  load();
+  loadItems();
+  loadTpl();
   render();
 </script>
 </body>
