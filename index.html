@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>UniUni 路线号+地址（简洁版）</title>
+  <title>UniUni 路线号+地址（极简/更准/Google）</title>
   <style>
     :root{ font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
     body{ margin:0; background:#f6f7fb; color:#111; }
@@ -19,7 +19,7 @@
     .btn{
       border:1px solid #d5d9e6; background:#fff;
       padding:14px 14px; border-radius:16px;
-      cursor:pointer; font-size:16px; font-weight:800;
+      cursor:pointer; font-size:16px; font-weight:900;
     }
     .btn.primary{ background:#111; color:#fff; border-color:#111; }
     .btn.warn{ background:#fff6e5; border-color:#ffd69a; }
@@ -42,20 +42,20 @@
       border:1px solid #e6e8ef; background:#fafbff; border-radius:16px;
       display:flex; flex-direction:column; justify-content:center; align-items:center;
     }
-    .routeNum{ font-size:44px; font-weight:950; line-height:1; }
+    .routeNum{ font-size:46px; font-weight:950; line-height:1; }
     .routeLab{ margin-top:6px; font-size:12px; color:#666; }
 
-    .addr{ font-size:16px; font-weight:700; line-height:1.25; margin-top:4px; }
+    .addr{ font-size:16px; font-weight:800; line-height:1.25; margin-top:4px; }
     .sub{ font-size:12px; color:#666; margin-top:6px; }
     .tag{ font-size:12px; padding:3px 8px; border-radius:999px; border:1px solid #e6e8ef; background:#fff; }
     .meta{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
     .smallbtn{
       border:1px solid #d5d9e6; background:#fff;
       padding:10px 12px; border-radius:14px;
-      cursor:pointer; font-size:14px; font-weight:800;
+      cursor:pointer; font-size:14px; font-weight:900;
     }
     .smallbtn.primary{ background:#111; color:#fff; border-color:#111; }
-
+    .smallbtn.gray{ background:#f2f3f7; }
     input[type="file"]{ width:100%; }
     .edit{
       width:100%; box-sizing:border-box;
@@ -64,7 +64,7 @@
       margin-top:8px;
     }
     details{ margin-top:10px; }
-    summary{ cursor:pointer; font-weight:800; }
+    summary{ cursor:pointer; font-weight:900; }
   </style>
 </head>
 <body>
@@ -86,13 +86,13 @@
 
     <div class="hint" style="margin-top:10px;">
       iPhone：点下面“选择截图(可多选，约6张)” → “批量导入” → 送单时只点最上面“Google导航下一条未送”。<br>
-      这版只保留：<b>路线号 + 地址</b>（不识别单号/姓名，减少干扰）。
+      本版只识别：<b>路线号（1-4位） + 地址</b>（不识别单号/姓名，减少干扰）。
     </div>
   </div>
 
   <div class="card">
     <div style="font-weight:950; font-size:18px;">批量导入（更准确：分区识别）</div>
-    <div class="hint" style="margin-top:6px;">会把图片左边当“路线号区”，右边当“地址区”分别识别，准确率更高。</div>
+    <div class="hint" style="margin-top:6px;">把截图左侧当“路线号区”，右侧当“地址区”分别识别，提高准确率。</div>
 
     <div class="row" style="margin-top:12px;">
       <input type="file" id="files" accept="image/*" multiple />
@@ -101,18 +101,18 @@
 
     <details>
       <summary>识别设置（一般不用改）</summary>
-      <div class="hint" style="margin-top:8px;">如果你的截图左边路线号占比更大/更小，可以调一下。</div>
+      <div class="hint" style="margin-top:8px;">如果路线号偶尔变成 “--”，把“路线号区域宽度”调大更稳。</div>
       <div class="row" style="margin-top:8px;">
         <span class="pill">路线号区域宽度：</span>
         <select id="routeW" class="edit" style="max-width:180px;">
-          <option value="0.30">30%</option>
-          <option value="0.35" selected>35%</option>
-          <option value="0.40">40%</option>
+          <option value="0.35">35%</option>
+          <option value="0.40" selected>40%</option>
+          <option value="0.45">45%</option>
         </select>
         <span class="pill">默认城市：</span>
         <input id="defaultCity" class="edit" style="max-width:320px;" value="Pittsburgh, PA" />
       </div>
-      <div class="hint" style="margin-top:8px;">默认城市会在地址太短/缺城市州时自动补上，Google Maps 更好找。</div>
+      <div class="hint" style="margin-top:8px;">地址缺城市州时，会自动补上默认城市，让 Google Maps 更好找。</div>
     </details>
 
     <div class="hint" id="hint" style="margin-top:10px;"></div>
@@ -124,11 +124,11 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
   // 只存：route + address + checked
-  const LS_KEY = "uniuni_route_addr_simple_v1";
+  const LS_KEY = "uniuni_route_addr_simple_v2";
   let items = []; // {id, route, address, checked, createdAt}
   let queue = [];
   let processing = false;
-  let lastActionStack = []; // for undo (store item id)
+  let lastActionStack = []; // undo: store item id toggled to checked
 
   const el = id => document.getElementById(id);
   const listEl = el("list");
@@ -155,7 +155,6 @@
     return hasNo && (hasStreet || /,\s*[A-Za-z]+\s*,?\s*[A-Z]{2}\b/.test(t) || /\b[A-Z]{2}\s*\d{5}\b/.test(t));
   }
 
-  // Google Maps 单点导航
   function navUrlGoogle(dest){
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=driving`;
   }
@@ -190,7 +189,7 @@
     const im = ctx.getImageData(0,0,w,h);
     const d = im.data;
 
-    const contrast = 1.40;
+    const contrast = 1.42;
     for(let i=0;i<d.length;i+=4){
       let gray = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
       gray = (gray - 128) * contrast + 128;
@@ -200,7 +199,7 @@
     let sum=0,cnt=0;
     for(let i=0;i<d.length;i+=48*4){ sum += d[i]; cnt++; }
     const avg = sum / Math.max(1,cnt);
-    const thr = Math.max(108, Math.min(180, avg - 12));
+    const thr = Math.max(104, Math.min(182, avg - 14));
 
     for(let i=0;i<d.length;i+=4){
       const v=d[i];
@@ -221,46 +220,42 @@
     return new Promise(res => cv.toBlob(res, "image/png", 1.0));
   }
 
-  // 从文本里提取路线号：优先 3 位数；如果有 2 位数也允许
+  // ✅ 路线号：只认 1~4 位数字（关键：支持个位数）
   function extractRoute(text){
-    const t = (text||"").replace(/\s+/g," ").trim();
-    // 常见：161 162 528 ...
-    let m = t.match(/\b(\d{3})\b/);
-    if(m) return m[1];
-    m = t.match(/\b(\d{2})\b/);
-    if(m) return m[1];
-    // 有时 OCR 会把 528 识别成 5 28 或 52 8
+    const t = (text || "").replace(/\s+/g, " ").trim();
+
+    let m = t.match(/\b(\d{1,4})\b/);
+    if (m) return m[1];
+
     const digits = (t.match(/\d/g) || []).join("");
-    if(digits.length >= 2 && digits.length <= 4) return digits;
+    if (digits.length >= 1 && digits.length <= 4) return digits;
+    if (digits.length > 4) return digits.slice(-4);
+
     return "";
   }
 
-  // 从右侧文本里提取地址：找第一条像地址的行；否则拼最合理的一行
   function extractAddress(text){
     const lines = (text||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
 
-    // 先找最像地址的一行
     let addr = lines.find(looksLikeAddressLine) || "";
 
-    // 如果被切断成两行：把下一行（城市州）拼上
+    // 合并下一行城市州（常见 Pittsburgh, PA...）
     if(addr){
       const i = lines.indexOf(addr);
       const next = lines[i+1] || "";
       const isCity = /\b[A-Za-z]+\b.*\b[A-Z]{2}\b/.test(next) || /\b[A-Z]{2}\s*\d{5}\b/.test(next);
-      if(isCity && next.length <= 50 && !/\b[A-Z]{2}\b/.test(addr)){
+      if(isCity && next.length <= 60 && !/\b[A-Z]{2}\b/.test(addr)){
         addr = addr + ", " + next;
       }
       return norm(addr);
     }
 
-    // 兜底：找包含门牌号的最长一行
     const withNo = lines.filter(l => /\b\d{1,6}\b/.test(l));
     if(withNo.length){
       withNo.sort((a,b)=>b.length-a.length);
       return norm(withNo[0]);
     }
 
-    // 最终兜底：取最长一行
     if(lines.length){
       lines.sort((a,b)=>b.length-a.length);
       return norm(lines[0]);
@@ -273,15 +268,13 @@
     address = norm(address||"");
     if(!address) return;
 
-    // 如果路线号没识别到，显示 --
-    const it = {
+    items.unshift({
       id: uid(),
       route: route || "--",
       address,
       checked: false,
       createdAt: Date.now()
-    };
-    items.unshift(it);
+    });
   }
 
   function dedupe(){
@@ -327,13 +320,14 @@
             <span class="tag">${it.checked ? "✅ 已送" : "⬜ 未送"}</span>
             <button class="smallbtn primary" data-act="nav" data-id="${it.id}">导航（自动勾选）</button>
             <button class="smallbtn" data-act="copy" data-id="${it.id}">复制地址</button>
-            <button class="smallbtn" data-act="toggle" data-id="${it.id}">${it.checked ? "取消勾选" : "手动勾选"}</button>
+            <button class="smallbtn gray" data-act="toggle" data-id="${it.id}">${it.checked ? "取消勾选" : "手动勾选"}</button>
             <button class="smallbtn" data-act="edit" data-id="${it.id}">修改</button>
           </div>
           <div class="addr">${esc(it.address)}</div>
-          <div class="sub">如果路线号显示 “--”，点“修改”手动补一下即可（只改这一条，不影响其他）。</div>
+          <div class="sub">如果路线号是 “--”，点“修改”手动补这一条即可（只改这一条）。</div>
+
           <div class="editBox" id="edit-${it.id}" style="display:none;">
-            <input class="edit" placeholder="路线号" value="${esc(it.route)}" data-k="route" data-id="${it.id}">
+            <input class="edit" placeholder="路线号（1-4位）" value="${esc(it.route)}" data-k="route" data-id="${it.id}">
             <input class="edit" placeholder="地址" value="${esc(it.address)}" data-k="address" data-id="${it.id}">
             <div class="row" style="margin-top:8px;">
               <button class="smallbtn primary" data-act="save" data-id="${it.id}">保存</button>
@@ -353,11 +347,10 @@
         if(!it) return;
 
         if(act==="nav"){
-          const url = navUrlGoogle(it.address);
-          it.checked = true;             // 导航后自动勾选 ✅
+          it.checked = true;                   // ✅ 导航后自动勾选
           lastActionStack.push(id);
           save(); render();
-          window.open(url, "_blank");
+          window.open(navUrlGoogle(it.address), "_blank");
         }else if(act==="copy"){
           await copyText(it.address);
         }else if(act==="toggle"){
@@ -384,7 +377,7 @@
   el("btnNavNext").addEventListener("click", ()=>{
     const next = items.find(x=>!x.checked);
     if(!next) return alert("没有未送的了（都已勾选）。");
-    next.checked = true;
+    next.checked = true;          // ✅ 自动勾选
     lastActionStack.push(next.id);
     save(); render();
     window.open(navUrlGoogle(next.address), "_blank");
@@ -394,7 +387,7 @@
     const next = items.find(x=>!x.checked);
     if(!next) return alert("没有未送的了（都已勾选）。");
     await copyText(next.address);
-    next.checked = true;
+    next.checked = true;          // ✅ 自动勾选
     lastActionStack.push(next.id);
     save(); render();
     alert("已复制并自动勾选。");
@@ -431,13 +424,14 @@
       workerDigits = await Tesseract.createWorker("eng");
       workerAddr = await Tesseract.createWorker("eng");
 
-      // 路线号 worker：只要数字
+      // ✅ 路线号：只要数字 + 用“单词模式”更适合一个大数字（个位数更稳）
       await workerDigits.setParameters({
         tessedit_char_whitelist: "0123456789",
-        preserve_interword_spaces: "1"
+        preserve_interword_spaces: "1",
+        tessedit_pageseg_mode: "8"
       });
 
-      // 地址 worker：允许数字字母空格逗号点号
+      // 地址：允许常见字符
       await workerAddr.setParameters({
         tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ,.-/#",
         preserve_interword_spaces: "1"
@@ -448,15 +442,15 @@
         el("hint").innerHTML = `<span class="hint">识别中：${esc(f.name || "image")}（剩余 ${queue.length} 张）…</span>`;
         render();
 
-        const routeFrac = parseFloat(el("routeW").value || "0.35");
+        const routeFrac = parseFloat(el("routeW").value || "0.40");
         const defaultCity = (el("defaultCity").value || "Pittsburgh, PA").trim();
 
         const { canvas, width, height } = await preprocess(f);
 
-        // 1) 左侧路线号区域
+        // 左侧路线号区
         const rBlob = await cropToBlob(canvas, 0, 0, width * routeFrac, height);
 
-        // 2) 右侧地址区域（留一点左边边距，避免把大号数字带进去）
+        // 右侧地址区（从 routeFrac 开始）
         const ax = Math.round(width * routeFrac);
         const aBlob = await cropToBlob(canvas, ax, 0, width - ax, height);
 
@@ -466,21 +460,21 @@
         const route = extractRoute((rRes.data && rRes.data.text) ? rRes.data.text : "");
         let addr = extractAddress((aRes.data && aRes.data.text) ? aRes.data.text : "");
 
-        // 如果地址太短/缺城市州：补默认城市，Google 更好找
-        if(addr && addr.length < 12 && defaultCity) addr = `${addr}, ${defaultCity}`;
-        if(addr && defaultCity && !/\b[A-Z]{2}\b/.test(addr) && !/,\s*[A-Za-z]+\s*,?\s*[A-Z]{2}\b/.test(addr)){
-          // 没有州缩写时也补
-          addr = `${addr}, ${defaultCity}`;
+        // 地址缺城市州：补默认城市
+        if(addr && defaultCity){
+          const hasState = /\b[A-Z]{2}\b/.test(addr);
+          const hasCityState = /,\s*[A-Za-z]+\s*,?\s*[A-Z]{2}\b/.test(addr);
+          if(!hasState && !hasCityState){
+            addr = `${addr}, ${defaultCity}`;
+          }
         }
 
-        // 一张截图可能有多条卡片：这一步我们做“尽量稳”的策略
-        // ——先加入 1 条（你反馈不准我们再升级到自动分割成多卡片）
         addItem(route, addr);
       }
 
       dedupe();
       save();
-      el("hint").innerHTML = `<span class="hint" style="color:#0a7a2f;">导入完成 ✅（如果某条路线号是 --，点“修改”补一下即可）</span>`;
+      el("hint").innerHTML = `<span class="hint" style="color:#0a7a2f;">导入完成 ✅（如果路线号是 --，点“修改”补这一条即可）</span>`;
       render();
 
     }catch(e){
