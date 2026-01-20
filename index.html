@@ -3,603 +3,446 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>UniUni 截图识别一键复制（置顶统计+自动勾选+一键导航）</title>
+  <title>UniUni 批量截图识别（Google Maps / 自动勾选 / 简洁版）</title>
   <style>
-    :root { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
-    body { margin: 0; background:#f6f7fb; color:#111; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 12px; }
-    .sticky {
-      position: sticky; top: 0; z-index: 10;
-      background: rgba(246,247,251,0.95);
+    :root { font-family: -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+    body { margin:0; background:#f6f7fb; color:#111; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 12px; }
+    .sticky{
+      position: sticky; top:0; z-index:10;
+      background: rgba(246,247,251,.96);
       backdrop-filter: blur(10px);
-      border-bottom: 1px solid #e6e8ef;
-      padding: 10px 12px;
-      margin: -12px -12px 12px -12px;
+      border-bottom:1px solid #e6e8ef;
+      padding:10px 12px;
+      margin:-12px -12px 12px -12px;
     }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .card { background:#fff; border:1px solid #e6e8ef; border-radius: 14px; padding: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
-    .btn {
-      border: 1px solid #d5d9e6; background:#fff; padding:10px 12px; border-radius: 12px;
-      cursor:pointer; font-size: 14px; line-height: 1;
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .btn{
+      border:1px solid #d5d9e6; background:#fff;
+      padding:11px 12px; border-radius: 14px; cursor:pointer;
+      font-size:14px; line-height:1;
     }
-    .btn.primary { background:#111; color:#fff; border-color:#111; }
-    .btn.danger { background:#fff3f3; border-color:#ffd3d3; color:#a40000; }
-    .btn:disabled { opacity: 0.5; cursor:not-allowed; }
-    .stat { font-size: 13px; color:#333; display:flex; gap:12px; flex-wrap: wrap; }
-    .hint { font-size: 12px; color:#666; }
-    textarea, input[type="text"], input[type="url"] {
-      width: 100%; box-sizing: border-box;
-      border:1px solid #d5d9e6; border-radius: 12px; padding: 10px;
-      font-size: 14px; background:#fff;
+    .btn.primary{ background:#111; color:#fff; border-color:#111; }
+    .btn.danger{ background:#fff3f3; border-color:#ffd3d3; color:#a40000; }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; }
+    .card{
+      background:#fff; border:1px solid #e6e8ef; border-radius: 16px;
+      padding:12px; box-shadow: 0 2px 10px rgba(0,0,0,.04);
     }
-    textarea { min-height: 120px; resize: vertical; }
-    .grid { display:grid; grid-template-columns: 1fr; gap: 12px; }
-    @media (min-width: 860px){ .grid { grid-template-columns: 1fr 1fr; } }
+    .hint{ font-size:12px; color:#666; }
+    .pill{ font-size:12px; padding:3px 8px; border-radius:999px; border:1px solid #e6e8ef; background:#fafbff; }
+    .stat{ font-size:13px; color:#333; display:flex; gap:10px; flex-wrap:wrap; }
+    .progress{ height:8px; background:#e9ecf7; border-radius:999px; overflow:hidden; margin-top:8px; }
+    .bar{ height:100%; width:0%; background:#111; transition: width .2s; }
 
-    .list { display:flex; flex-direction: column; gap: 10px; }
-    .item { display:grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; }
-    .meta { display:flex; gap: 8px; flex-wrap: wrap; align-items:center; }
-    .pill { font-size: 12px; padding: 3px 8px; border-radius: 999px; border: 1px solid #e6e8ef; background:#fafbff; color:#333; }
-    .addr { font-size: 14px; line-height: 1.35; }
-    .small { font-size: 12px; color:#666; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-    .right { margin-left:auto; }
-    .warn { color:#a40000; font-size: 12px; }
-    .ok { color:#0a7a2f; font-size: 12px; }
-    .footer { margin-top: 14px; font-size: 12px; color:#666; }
-    .progress { height: 8px; background:#e9ecf7; border-radius: 999px; overflow: hidden; }
-    .bar { height: 100%; width: 0%; background:#111; transition: width .2s; }
-    details { border:1px solid #e6e8ef; border-radius:12px; padding:10px; background:#fff; }
-    summary { cursor:pointer; font-weight:600; }
+    .list{ display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+    .item{
+      display:grid; grid-template-columns: 92px 1fr; gap:10px; align-items:stretch;
+      border:1px solid #e6e8ef; border-radius:16px; padding:10px; background:#fff;
+    }
+    .routeBox{
+      border-radius:14px; border:1px solid #e6e8ef; background:#fafbff;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:8px;
+    }
+    .routeNum{ font-size:40px; font-weight:900; line-height:1; }
+    .routeTxt{ font-size:12px; color:#666; margin-top:6px; }
+    .addr{ font-size:15px; line-height:1.35; margin-top:4px; }
+    .meta{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .small{ font-size:12px; color:#666; margin-top:6px; }
+    textarea{ width:100%; box-sizing:border-box; border:1px solid #d5d9e6; border-radius:14px; padding:10px; font-size:14px; min-height:110px; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <!-- 置顶统计栏 -->
-    <div class="sticky">
-      <div class="row" style="gap:12px;">
-        <button class="btn primary" id="btnCopyNext">复制下一条未送（自动勾选）</button>
-        <button class="btn" id="btnNavNext">导航下一条未送</button>
-        <button class="btn" id="btnCopyChecked">复制已勾选地址</button>
-        <button class="btn" id="btnNavChecked">一键导航已勾选（多点路线）</button>
-        <button class="btn danger right" id="btnClear">清空</button>
-      </div>
+<div class="wrap">
 
-      <details style="margin-top:10px;">
-        <summary>导航设置（可选）</summary>
-        <div class="hint" style="margin-top:8px;">建议把“起点”设成你家，这样一键导航会从家出发串起来。</div>
-        <div class="row" style="margin-top:8px;">
-          <div style="flex:1; min-width: 260px;">
-            <div class="hint">起点（默认：219 Lookout Ave, Charleroi, PA 15022）</div>
-            <input type="text" id="home" placeholder="例如：219 Lookout Ave, Charleroi, PA 15022" />
-          </div>
-          <div style="flex:1; min-width: 220px;">
-            <div class="hint">地图模式</div>
-            <label class="hint"><input type="radio" name="mapmode" value="google" checked /> Google Maps</label>
-            <label class="hint" style="margin-left:10px;"><input type="radio" name="mapmode" value="apple" /> Apple Maps（iPhone）</label>
-          </div>
-        </div>
-        <div class="hint" style="margin-top:8px;">
-          多点路线：Google Maps 单次最多大约 10 个点（含终点）更稳，所以会自动拆分成多段并生成多个“打开路线”按钮。
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <button class="btn" id="btnBuildRoutes">生成多点导航链接</button>
-        </div>
-        <div id="routesBox" style="margin-top:10px;"></div>
-      </details>
-
-      <div class="row" style="margin-top:10px;">
-        <div class="stat" id="statLine"></div>
-      </div>
-      <div class="progress" style="margin-top:8px;">
-        <div class="bar" id="progBar"></div>
-      </div>
-      <div class="hint" style="margin-top:8px;">
-        支持：① 上传 UniUni 截图 OCR ② 粘贴截图（从剪贴板）③ 直接粘贴文本识别。导入后默认<strong>自动勾选</strong>。
-      </div>
+  <div class="sticky">
+    <div class="row">
+      <button class="btn primary" id="btnNavNext">Google导航下一条未送（自动勾选）</button>
+      <button class="btn" id="btnCopyNext">复制下一条未送（自动勾选）</button>
+      <button class="btn danger" id="btnClear">清空</button>
     </div>
 
-    <div class="grid">
-      <!-- 左侧：输入 -->
-      <div class="card">
-        <div class="row" style="margin-bottom:8px;">
-          <div style="font-weight:700;">A. 截图识别（OCR）</div>
-          <span class="pill">UniUni Screenshot</span>
-        </div>
+    <div class="row" style="margin-top:10px;">
+      <div class="stat" id="statLine"></div>
+      <span class="pill" id="jobLine">待处理：0</span>
+    </div>
+    <div class="progress"><div class="bar" id="progBar"></div></div>
 
-        <div class="row">
-          <input type="file" id="fileImg" accept="image/*" />
-          <button class="btn" id="btnPasteImg">从剪贴板粘贴截图</button>
-          <button class="btn primary" id="btnRunOcr">识别并导入</button>
-        </div>
-        <div class="hint" id="ocrHint" style="margin-top:8px;">
-          第一次加载 OCR 会慢一些（会下载识别库/语言包），后面会很快。
-        </div>
-        <div class="row" style="margin-top:10px;">
-          <img id="preview" alt="" style="max-width:100%; border-radius:12px; border:1px solid #e6e8ef; display:none;" />
-        </div>
-
-        <hr style="border:none;border-top:1px solid #e6e8ef; margin:14px 0;" />
-
-        <div class="row" style="margin-bottom:8px;">
-          <div style="font-weight:700;">B. 文本识别（直接粘贴）</div>
-          <span class="pill">Text Parse</span>
-        </div>
-        <textarea id="txtRaw" placeholder="把你复制到的文字粘贴进来（可以是 UniUni 里复制的内容、或你手打的：每行一个地址也行）"></textarea>
-
-        <div class="row" style="margin-top:10px;">
-          <button class="btn primary" id="btnParseText">解析并导入（自动勾选）</button>
-          <button class="btn" id="btnDedupe">去重</button>
-          <label class="hint"><input type="checkbox" id="chkAutoCheck" checked /> 导入后自动勾选</label>
-        </div>
-
-        <div class="footer">
-          解析规则是“尽量智能”：优先抓<strong>像地址的行</strong>，再尝试提取<strong>单号/线路号（数字）</strong>做标签。识别不准时，你也可以直接把地址一行一条粘贴进来，最稳。
-        </div>
-      </div>
-
-      <!-- 右侧：结果列表 -->
-      <div class="card">
-        <div class="row" style="margin-bottom:8px;">
-          <div style="font-weight:700;">结果列表（可勾选/一键复制/一键导航）</div>
-          <span class="pill">Checklist</span>
-        </div>
-
-        <div class="row">
-          <input type="text" id="q" placeholder="搜索：路名 / 城市 / 数字单号…" />
-          <button class="btn" id="btnCheckAll">全选</button>
-          <button class="btn" id="btnUncheckAll">全不选</button>
-        </div>
-
-        <div class="list" id="list" style="margin-top:12px;"></div>
-
-        <div class="footer">
-          小技巧：用“导航下一条未送”——每点一次就直接打开地图导航，并自动把该条打勾。
-        </div>
-      </div>
+    <div class="hint" style="margin-top:8px;">
+      用法（iPhone）：点“选择截图（可多选，约6张）” → 点“批量识别导入” → 送单时只点最上面的“Google导航下一条未送”。<br>
+      每点一次：打开 Google Maps 导航 + 这条自动变 ✅ 已送
     </div>
   </div>
 
-  <!-- tesseract.js OCR -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <div class="card">
+    <div class="row" style="justify-content:space-between;">
+      <div style="font-weight:900;">批量导入（更准 OCR）</div>
+      <span class="pill">Google Maps 默认</span>
+    </div>
 
-  <script>
-    const LS_KEY = "uniuni_ocr_items_v5_nav";
-    const LS_HOME = "uniuni_home_v1";
-    const LS_MAPMODE = "uniuni_mapmode_v1";
+    <div class="row" style="margin-top:10px;">
+      <input type="file" id="fileImgs" accept="image/*" multiple />
+      <button class="btn primary" id="btnRunOcr">批量识别导入</button>
+      <button class="btn" id="btnDedupe">去重</button>
+    </div>
 
-    /** item: {id, checked, label, address, source, createdAt, copiedAt?} */
-    let items = [];
+    <div class="hint" id="ocrHint" style="margin-top:10px;"></div>
 
-    const el = (id) => document.getElementById(id);
-    const listEl = el("list");
-    const statEl = el("statLine");
-    const progEl = el("progBar");
-    const routesBox = el("routesBox");
+    <details style="margin-top:12px;">
+      <summary style="cursor:pointer; font-weight:800;">备用：粘贴文本再解析（可选）</summary>
+      <div class="hint" style="margin-top:8px;">如果某一张识别乱了，把 OCR 文本粘贴进来也能解析。</div>
+      <textarea id="txtRaw" placeholder="粘贴 OCR 文本（可选）"></textarea>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn primary" id="btnParseText">解析导入</button>
+      </div>
+    </details>
+  </div>
 
-    function uid() { return Math.random().toString(36).slice(2, 9) + Date.now().toString(36); }
+  <div class="list" id="list"></div>
 
-    function save() { localStorage.setItem(LS_KEY, JSON.stringify(items)); }
-    function load() {
-      try {
-        const raw = localStorage.getItem(LS_KEY);
-        items = raw ? JSON.parse(raw) : [];
-      } catch { items = []; }
+</div>
 
-      // home + mapmode
-      const home = localStorage.getItem(LS_HOME) || "219 Lookout Ave, Charleroi, PA 15022";
-      el("home").value = home;
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+  const LS_KEY = "uniuni_google_batch_v1";
 
-      const mm = localStorage.getItem(LS_MAPMODE) || "google";
-      document.querySelectorAll('input[name="mapmode"]').forEach(r => {
-        r.checked = (r.value === mm);
-      });
+  let items = []; // {id, checked, route, tracking, address, createdAt, usedAt?}
+  let queue = [];
+  let processing = false;
+
+  const el = id => document.getElementById(id);
+  const listEl = el("list");
+  const statEl = el("statLine");
+  const progEl = el("progBar");
+  const jobEl = el("jobLine");
+
+  function uid(){ return Math.random().toString(36).slice(2,9) + Date.now().toString(36); }
+  function save(){ localStorage.setItem(LS_KEY, JSON.stringify(items)); }
+  function load(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      items = raw ? JSON.parse(raw) : [];
+    }catch{ items = []; }
+  }
+  function escapeHtml(s){
+    return (s||"").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+  function normalizeAddress(s){
+    return (s||"").replace(/\s+/g," ").replace(/\s*,\s*/g,", ").trim();
+  }
+  function looksLikeAddress(line){
+    const s = (line||"").trim();
+    if (s.length < 8) return false;
+    const hasNumber = /\b\d{1,6}\b/.test(s);
+    const hasStreet = /\b(st|street|ave|avenue|rd|road|blvd|boulevard|dr|drive|ln|lane|way|ct|court|pl|place|pkwy|parkway|hwy|highway|cir|circle|trl|trail)\b/i.test(s);
+    const hasCityStateZip = /\bPittsburgh\b.*\bPA\b/i.test(s) || /\b[A-Z]{2}\s*\d{5}(-\d{4})?\b/.test(s);
+    return hasNumber && (hasStreet || hasCityStateZip);
+  }
+
+  // Google Maps 单点导航（iPhone 也能打开 Google Maps App 或网页）
+  function navUrlGoogle(dest){
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=driving`;
+  }
+
+  async function copyText(text){
+    try{ await navigator.clipboard.writeText(text); }
+    catch{
+      const ta=document.createElement("textarea");
+      ta.value=text; document.body.appendChild(ta);
+      ta.select(); document.execCommand("copy"); ta.remove();
+    }
+  }
+
+  // ===== 更准：OCR 前预处理（放大 + 灰度 + 对比 + 二值化）=====
+  async function preprocessImageToBlob(fileOrBlob){
+    const blob = fileOrBlob;
+    const img = new Image();
+    img.decoding = "async";
+    const url = URL.createObjectURL(blob);
+    img.src = url;
+    await img.decode();
+    URL.revokeObjectURL(url);
+
+    // 放大一点（对 UniUni 白底黑字更准）
+    const scale = Math.min(2.2, Math.max(1.4, 1700 / Math.max(img.width, img.height)));
+    const w = Math.round(img.width * scale);
+    const h = Math.round(img.height * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d", { willReadFrequently:true });
+
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const im = ctx.getImageData(0,0,w,h);
+    const d = im.data;
+
+    const contrast = 1.38;
+    for(let i=0;i<d.length;i+=4){
+      const r=d[i], g=d[i+1], b=d[i+2];
+      let gray = (0.299*r + 0.587*g + 0.114*b);
+      gray = (gray - 128) * contrast + 128;
+      d[i]=d[i+1]=d[i+2]=gray;
     }
 
-    function getHome() {
-      const v = (el("home").value || "").trim();
-      const home = v || "219 Lookout Ave, Charleroi, PA 15022";
-      localStorage.setItem(LS_HOME, home);
-      return home;
+    // 阈值：抽样估计平均亮度，阈值略偏低让字更黑
+    let sum=0,cnt=0;
+    for(let i=0;i<d.length;i+=48*4){ sum += d[i]; cnt++; }
+    const avg = sum / Math.max(1,cnt);
+    const thr = Math.max(108, Math.min(178, avg - 12));
+
+    for(let i=0;i<d.length;i+=4){
+      const v=d[i];
+      const bw = v < thr ? 0 : 255;
+      d[i]=d[i+1]=d[i+2]=bw;
     }
-    function getMapMode() {
-      const r = document.querySelector('input[name="mapmode"]:checked');
-      const mm = r ? r.value : "google";
-      localStorage.setItem(LS_MAPMODE, mm);
-      return mm;
+    ctx.putImageData(im,0,0);
+
+    return await new Promise(res => canvas.toBlob(res, "image/png", 1.0));
+  }
+
+  // ===== 按 UUS 分组，提取 route + tracking + address =====
+  function parseUniUniFromText(raw){
+    const lines = (raw||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+
+    const idxs = [];
+    for(let i=0;i<lines.length;i++){
+      if(/^UUS[0-9A-Z]{10,}$/i.test(lines[i])) idxs.push(i);
+    }
+    if(!idxs.length) return [];
+
+    const blocks = [];
+    for(let b=0;b<idxs.length;b++){
+      const s = idxs[b];
+      const e = (b+1<idxs.length)? idxs[b+1] : lines.length;
+      blocks.push(lines.slice(s,e));
     }
 
-    function normalizeAddress(s) {
-      return (s || "")
-        .replace(/\s+/g, " ")
-        .replace(/\s*,\s*/g, ", ")
-        .trim();
-    }
+    const out = [];
+    for(const blk of blocks){
+      const text = blk.join(" ");
+      const tracking = (blk.find(l=>/^UUS[0-9A-Z]{10,}$/i.test(l))||"").toUpperCase();
 
-    function looksLikeAddress(line) {
-      const s = line.trim();
-      if (s.length < 8) return false;
-      const hasNumber = /\b\d{1,6}\b/.test(s);
-      const hasStreetWord = /\b(st|street|ave|avenue|rd|road|blvd|boulevard|dr|drive|ln|lane|way|ct|court|pl|place|pkwy|parkway|hwy|highway|cir|circle|trl|trail)\b/i.test(s);
-      const hasCityStateZip = /\b[A-Z]{2}\s*\d{5}(-\d{4})?\b/.test(s);
-      return (hasNumber && (hasStreetWord || hasCityStateZip));
-    }
-
-    function extractLabel(text) {
-      const hits = (text.match(/\b\d{3,6}\b/g) || []).slice(0, 3);
-      if (!hits.length) return "";
-      const uniq = [...new Set(hits)];
-      return uniq.join("/");
-    }
-
-    function addItems(addressLines, source) {
-      const autoCheck = el("chkAutoCheck").checked;
-      const now = Date.now();
-      const newOnes = [];
-      for (const raw of addressLines) {
-        const addr = normalizeAddress(raw);
-        if (!addr) continue;
-        newOnes.push({
-          id: uid(),
-          checked: !!autoCheck,
-          label: extractLabel(raw),
-          address: addr,
-          source,
-          createdAt: now
-        });
+      // 路线号：优先抓“单独一行三位数”
+      let route = "";
+      const routeLine = blk.find(l => /^\d{3}$/.test(l));
+      if(routeLine) route = routeLine;
+      if(!route){
+        const m = text.match(/\b(1\d{2}|[2-9]\d{2})\b/);
+        if(m) route = m[1];
       }
-      items = newOnes.concat(items);
-      save();
-      render();
-    }
 
-    function dedupe() {
-      const seen = new Set();
-      const out = [];
-      for (const it of items) {
-        const key = it.address.toLowerCase();
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push(it);
-      }
-      items = out;
-      save();
-      render();
-    }
+      // 地址：找最像地址的行 + 合并下一行 city/state
+      const cand = blk.filter(looksLikeAddress);
+      let addr = cand[0] || "";
 
-    function escapeHtml(s) {
-      return (s||"").replace(/[&<>"']/g, (c) => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[c]));
-    }
-
-    async function copyText(text) {
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch (e) {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        ta.remove();
-      }
-    }
-
-    // ====== 一键导航：URL 生成 ======
-    function enc(s){ return encodeURIComponent(s); }
-
-    // 单点导航：打开地图直接导航到地址
-    function navUrlSingle(dest) {
-      const mode = getMapMode();
-      if (mode === "apple") {
-        // Apple Maps：daddr=目的地
-        return `https://maps.apple.com/?daddr=${enc(dest)}`;
-      }
-      // Google Maps：destination=目的地，travelmode=driving
-      return `https://www.google.com/maps/dir/?api=1&destination=${enc(dest)}&travelmode=driving`;
-    }
-
-    // 多点路线：从 home 出发，途经 waypoints，终点=最后一个
-    // Google Maps：origin + destination + waypoints（用 | 分隔）
-    // Apple Maps：不稳定/限制多点，这里只给 Google 做多点；Apple 走单点更稳
-    function navUrlMultiGoogle(stops) {
-      const home = getHome();
-      const clean = stops.map(normalizeAddress).filter(Boolean);
-      if (clean.length === 0) return "";
-      if (clean.length === 1) {
-        return `https://www.google.com/maps/dir/?api=1&origin=${enc(home)}&destination=${enc(clean[0])}&travelmode=driving`;
-      }
-      const destination = clean[clean.length - 1];
-      const waypoints = clean.slice(0, -1).join("|");
-      return `https://www.google.com/maps/dir/?api=1&origin=${enc(home)}&destination=${enc(destination)}&waypoints=${enc(waypoints)}&travelmode=driving`;
-    }
-
-    // 将勾选地址拆分成多个“最多10点/段”（更稳）
-    // 这里按：每段最多 9 个 stop（不含起点 home），这样 destination+waypoints 总点数不容易超。
-    function chunkStops(stops, size=9) {
-      const out = [];
-      for (let i=0; i<stops.length; i+=size) out.push(stops.slice(i, i+size));
-      return out;
-    }
-
-    function buildRoutesUI() {
-      routesBox.innerHTML = "";
-      const mode = getMapMode();
-      const checked = items.filter(x => x.checked).map(x => x.address);
-      if (!checked.length) {
-        routesBox.innerHTML = `<div class="hint">没有已勾选的地址，先勾选一些再生成路线。</div>`;
-        return;
-      }
-      if (mode === "apple") {
-        routesBox.innerHTML = `<div class="hint"><span class="warn">Apple Maps 多点路线不稳定</span>。建议切到 Google Maps 再用“多点路线”。Apple 你可以用每条的“导航”按钮，或用“导航下一条未送”。</div>`;
-        return;
-      }
-      const chunks = chunkStops(checked, 9);
-      const home = getHome();
-      routesBox.innerHTML = `<div class="hint">起点：<span class="mono">${escapeHtml(home)}</span>。已勾选 ${checked.length} 条，拆成 ${chunks.length} 段：</div>`;
-      chunks.forEach((seg, idx) => {
-        const url = navUrlMultiGoogle(seg);
-        const btn = document.createElement("button");
-        btn.className = "btn primary";
-        btn.textContent = `打开路线 第 ${idx+1} 段（${seg.length} 个点）`;
-        btn.style.marginTop = "8px";
-        btn.onclick = () => window.open(url, "_blank");
-        routesBox.appendChild(btn);
-
-        const small = document.createElement("div");
-        small.className = "small";
-        small.innerHTML = `包含：<span class="mono">${escapeHtml(seg.join(" | "))}</span>`;
-        routesBox.appendChild(small);
-      });
-    }
-
-    // ====== 渲染列表 ======
-    function render() {
-      const q = el("q").value.trim().toLowerCase();
-      const filtered = q
-        ? items.filter(it => (it.address + " " + (it.label||"")).toLowerCase().includes(q))
-        : items;
-
-      listEl.innerHTML = "";
-      if (!filtered.length) {
-        listEl.innerHTML = `<div class="hint">暂无数据。你可以上传 UniUni 截图或粘贴文本。</div>`;
-      } else {
-        for (const it of filtered) {
-          const div = document.createElement("div");
-          div.className = "item";
-          div.innerHTML = `
-            <div>
-              <input type="checkbox" ${it.checked ? "checked" : ""} data-id="${it.id}" />
-            </div>
-            <div>
-              <div class="meta">
-                ${it.label ? `<span class="pill mono">#${escapeHtml(it.label)}</span>` : ""}
-                <span class="pill">${escapeHtml(it.source || "")}</span>
-                ${it.copiedAt ? `<span class="pill">已复制/导航</span>` : ``}
-                <button class="btn" data-act="copyOne" data-id="${it.id}">复制并勾选</button>
-                <button class="btn" data-act="navOne" data-id="${it.id}">导航</button>
-                <button class="btn" data-act="toggle" data-id="${it.id}">${it.checked ? "取消勾选" : "勾选"}</button>
-              </div>
-              <div class="addr">${escapeHtml(it.address)}</div>
-              <div class="small">导航：单条直接打开地图；多点路线用置顶栏“一键导航已勾选”。</div>
-            </div>
-          `;
-          listEl.appendChild(div);
+      if(addr){
+        const i = blk.indexOf(addr);
+        const next = blk[i+1] || "";
+        const isCity = /\bPittsburgh\b.*\bPA\b/i.test(next) || /\b[A-Z]{2}\s*\d{5}/.test(next);
+        if(isCity && !/\bPA\b/i.test(addr) && next.length <= 60){
+          addr = `${addr}, ${next}`;
         }
+      }else{
+        const l2 = blk.find(l => /\b\d{1,6}\b/.test(l) && l.length >= 10);
+        if(l2) addr = l2;
       }
 
-      const total = items.length;
-      const checked = items.filter(x => x.checked).length;
-      const unchecked = total - checked;
-      const copied = items.filter(x => x.copiedAt).length;
-
-      statEl.innerHTML = `
-        <span class="pill">总数：<b>${total}</b></span>
-        <span class="pill">已勾选：<b>${checked}</b></span>
-        <span class="pill">未勾选：<b>${unchecked}</b></span>
-        <span class="pill">已复制/导航过：<b>${copied}</b></span>
-      `;
-
-      const pct = total ? Math.round((checked / total) * 100) : 0;
-      progEl.style.width = pct + "%";
-
-      // checkbox
-      listEl.querySelectorAll('input[type="checkbox"][data-id]').forEach(cb => {
-        cb.addEventListener("change", () => {
-          const id = cb.getAttribute("data-id");
-          const it = items.find(x => x.id === id);
-          if (it) {
-            it.checked = cb.checked;
-            save();
-            render();
-          }
-        }, { once: true });
-      });
-
-      // buttons
-      listEl.querySelectorAll('button[data-act]').forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const act = btn.getAttribute("data-act");
-          const id = btn.getAttribute("data-id");
-          const it = items.find(x => x.id === id);
-          if (!it) return;
-
-          if (act === "copyOne") {
-            await copyText(it.address);
-            it.checked = true;
-            it.copiedAt = Date.now();
-            save(); render();
-          } else if (act === "navOne") {
-            const url = navUrlSingle(it.address);
-            it.checked = true;       // 导航也自动勾选
-            it.copiedAt = Date.now();
-            save(); render();
-            window.open(url, "_blank");
-          } else if (act === "toggle") {
-            it.checked = !it.checked;
-            save(); render();
-          }
-        }, { once: true });
-      });
-    }
-
-    // ====== 文本解析 ======
-    function parseAddressesFromText(raw) {
-      const lines = (raw || "").split(/\r?\n/).map(x => x.trim()).filter(Boolean);
-      let addrLines = lines.filter(looksLikeAddress);
-      if (addrLines.length === 0) {
-        addrLines = lines.filter(l => /\d/.test(l) && l.length >= 10);
-      }
-      addrLines = addrLines
-        .map(normalizeAddress)
-        .filter(l => l.length >= 8)
-        .filter(l => !/total|subtotal|delivered|pickup|dropoff|route|stop\s*\d+/i.test(l));
-      return addrLines;
-    }
-
-    // ====== OCR ======
-    async function runOcrOnImage(imgBlob) {
-      el("btnRunOcr").disabled = true;
-      el("ocrHint").innerHTML = `<span class="warn">OCR 识别中…（第一次会慢）</span>`;
-      try {
-        const worker = await Tesseract.createWorker("eng");
-        const { data } = await worker.recognize(imgBlob);
-        await worker.terminate();
-        const text = data && data.text ? data.text : "";
-        el("txtRaw").value = text.trim();
-        const addrLines = parseAddressesFromText(text);
-        if (!addrLines.length) {
-          el("ocrHint").innerHTML = `<span class="warn">识别到了文字，但没有抓到“像地址”的行。你可以手动在文本框里删掉噪声，只保留地址每行一条，再点“解析并导入”。</span>`;
-        } else {
-          addItems(addrLines, "OCR");
-          el("ocrHint").innerHTML = `<span class="ok">已识别并导入：${addrLines.length} 条（默认自动勾选）</span>`;
-        }
-      } catch (e) {
-        console.error(e);
-        el("ocrHint").innerHTML = `<span class="warn">OCR 失败：${escapeHtml(String(e))}</span>`;
-      } finally {
-        el("btnRunOcr").disabled = false;
+      addr = normalizeAddress(addr);
+      if(addr){
+        out.push({ route, tracking, address: addr });
       }
     }
+    return out;
+  }
 
-    // ====== 事件绑定 ======
-    el("btnParseText").addEventListener("click", () => {
-      const raw = el("txtRaw").value;
-      const addrLines = parseAddressesFromText(raw);
-      if (!addrLines.length) return alert("没有解析到地址。你可以把地址按“每行一条”粘贴进来再试。");
-      addItems(addrLines, "TEXT");
-    });
+  function addParsed(parsed, source){
+    const now = Date.now();
+    const newOnes = parsed.map(p => ({
+      id: uid(),
+      checked: false, // 默认未送，适合你按“导航下一条未送”顺着点
+      route: p.route || "",
+      tracking: p.tracking || "",
+      address: normalizeAddress(p.address),
+      source,
+      createdAt: now
+    })).filter(x => x.address);
 
-    el("btnDedupe").addEventListener("click", () => dedupe());
-
-    el("btnCheckAll").addEventListener("click", () => {
-      items.forEach(x => x.checked = true);
-      save(); render();
-    });
-    el("btnUncheckAll").addEventListener("click", () => {
-      items.forEach(x => x.checked = false);
-      save(); render();
-    });
-
-    el("q").addEventListener("input", () => render());
-
-    el("btnClear").addEventListener("click", () => {
-      if (!confirm("确定清空全部数据？")) return;
-      items = [];
-      save();
-      el("txtRaw").value = "";
-      el("preview").style.display = "none";
-      routesBox.innerHTML = "";
-      render();
-    });
-
-    el("btnCopyChecked").addEventListener("click", async () => {
-      const checked = items.filter(x => x.checked);
-      if (!checked.length) return alert("没有已勾选的地址。");
-      const text = checked.map(x => x.address).join("\n");
-      await copyText(text);
-      const t = Date.now();
-      checked.forEach(x => x.copiedAt = t);
-      save(); render();
-      alert("已复制已勾选地址（多行）。");
-    });
-
-    // 导航已勾选：多点路线（Google），Apple 提示用单点
-    el("btnNavChecked").addEventListener("click", () => {
-      buildRoutesUI();
-      // 自动滚到 routes 区域（手机更方便）
-      routesBox.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-
-    // 导航下一条未送：打开地图 + 自动勾选
-    el("btnNavNext").addEventListener("click", () => {
-      const next = items.find(x => !x.checked);
-      if (!next) return alert("没有未勾选的地址了（都已勾选）。");
-      const url = navUrlSingle(next.address);
-      next.checked = true;
-      next.copiedAt = Date.now();
-      save(); render();
-      window.open(url, "_blank");
-    });
-
-    // 复制下一条未送（自动勾选）
-    el("btnCopyNext").addEventListener("click", async () => {
-      const next = items.find(x => !x.checked);
-      if (!next) return alert("没有未勾选的地址了（都已勾选）。");
-      await copyText(next.address);
-      next.checked = true;
-      next.copiedAt = Date.now();
-      save(); render();
-      alert("已复制下一条未送，并自动勾选。");
-    });
-
-    // 生成多点导航链接按钮
-    el("btnBuildRoutes").addEventListener("click", () => buildRoutesUI());
-
-    // 图片上传预览
-    el("fileImg").addEventListener("change", () => {
-      const f = el("fileImg").files && el("fileImg").files[0];
-      if (!f) return;
-      const url = URL.createObjectURL(f);
-      const img = el("preview");
-      img.src = url;
-      img.style.display = "block";
-    });
-
-    // OCR
-    el("btnRunOcr").addEventListener("click", async () => {
-      const f = el("fileImg").files && el("fileImg").files[0];
-      if (!f) return alert("先选择一张 UniUni 截图。");
-      await runOcrOnImage(f);
-    });
-
-    // 从剪贴板粘贴图片
-    el("btnPasteImg").addEventListener("click", async () => {
-      try {
-        const itemsCb = await navigator.clipboard.read();
-        for (const it of itemsCb) {
-          const types = it.types || [];
-          const imgType = types.find(t => t.startsWith("image/"));
-          if (imgType) {
-            const blob = await it.getType(imgType);
-            const url = URL.createObjectURL(blob);
-            const img = el("preview");
-            img.src = url;
-            img.style.display = "block";
-            await runOcrOnImage(blob);
-            return;
-          }
-        }
-        alert("剪贴板里没有图片。你先截图，再回来点这个按钮。");
-      } catch (e) {
-        alert("浏览器不允许读取剪贴板图片（可能需要 HTTPS 或权限）。你可以用“选择图片”上传截图。");
-      }
-    });
-
-    // 初始化
-    load();
+    items = newOnes.concat(items);
+    save();
     render();
-  </script>
+  }
+
+  function dedupe(){
+    const seen = new Set();
+    const out = [];
+    for(const it of items){
+      const key = (it.route+"|"+it.tracking+"|"+it.address).toLowerCase();
+      if(seen.has(key)) continue;
+      seen.add(key);
+      out.push(it);
+    }
+    items = out;
+    save();
+    render();
+  }
+
+  function render(){
+    const total = items.length;
+    const done = items.filter(x=>x.checked).length;
+    const todo = total - done;
+
+    statEl.innerHTML = `
+      <span class="pill">总数：<b>${total}</b></span>
+      <span class="pill">未送：<b>${todo}</b></span>
+      <span class="pill">已送：<b>${done}</b></span>
+    `;
+    progEl.style.width = total ? Math.round(done/total*100) + "%" : "0%";
+    jobEl.textContent = `待处理：${queue.length}${processing ? "（识别中）" : ""}`;
+
+    listEl.innerHTML = "";
+    if(!items.length){
+      listEl.innerHTML = `<div class="card"><div class="hint">还没有导入数据。先选择 6 张左右 UniUni 截图 → 点“批量识别导入”。</div></div>`;
+      return;
+    }
+
+    for(const it of items){
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <div class="routeBox">
+          <div class="routeNum">${escapeHtml(it.route || "--")}</div>
+          <div class="routeTxt">路线号</div>
+        </div>
+        <div>
+          <div class="meta">
+            <span class="pill">${it.checked ? "✅ 已送" : "⬜ 未送"}</span>
+            ${it.tracking ? `<span class="pill">${escapeHtml(it.tracking)}</span>` : ""}
+            <button class="btn primary" data-act="nav" data-id="${it.id}">导航（自动勾选）</button>
+            <button class="btn" data-act="copy" data-id="${it.id}">复制地址</button>
+            <button class="btn" data-act="toggle" data-id="${it.id}">${it.checked ? "取消勾选" : "手动勾选"}</button>
+          </div>
+          <div class="addr">${escapeHtml(it.address)}</div>
+          <div class="small">建议：你主要用顶部“Google导航下一条未送”顺着送。</div>
+        </div>
+      `;
+      listEl.appendChild(div);
+    }
+
+    listEl.querySelectorAll("button[data-act]").forEach(btn=>{
+      btn.addEventListener("click", async ()=>{
+        const act = btn.getAttribute("data-act");
+        const id = btn.getAttribute("data-id");
+        const it = items.find(x=>x.id===id);
+        if(!it) return;
+
+        if(act==="nav"){
+          const url = navUrlGoogle(it.address);
+          it.checked = true; // 导航后自动勾选 ✅
+          it.usedAt = Date.now();
+          save(); render();
+          window.open(url, "_blank");
+        }else if(act==="copy"){
+          await copyText(it.address);
+        }else if(act==="toggle"){
+          it.checked = !it.checked;
+          save(); render();
+        }
+      }, { once:true });
+    });
+  }
+
+  // ===== 顶部快捷按钮 =====
+  el("btnNavNext").addEventListener("click", ()=>{
+    const next = items.find(x=>!x.checked);
+    if(!next) return alert("没有未送的了（都已勾选）。");
+    const url = navUrlGoogle(next.address);
+    next.checked = true; // 导航后自动勾选 ✅
+    next.usedAt = Date.now();
+    save(); render();
+    window.open(url, "_blank");
+  });
+
+  el("btnCopyNext").addEventListener("click", async ()=>{
+    const next = items.find(x=>!x.checked);
+    if(!next) return alert("没有未送的了（都已勾选）。");
+    await copyText(next.address);
+    next.checked = true; // 复制后也自动勾选（你送单更省事）
+    next.usedAt = Date.now();
+    save(); render();
+    alert("已复制下一条未送，并自动勾选。");
+  });
+
+  el("btnClear").addEventListener("click", ()=>{
+    if(!confirm("确定清空全部数据？")) return;
+    items = [];
+    queue = [];
+    processing = false;
+    save();
+    el("txtRaw").value = "";
+    render();
+  });
+
+  el("btnDedupe").addEventListener("click", ()=>dedupe());
+
+  // ===== 批量 OCR 队列处理 =====
+  async function processQueue(){
+    if(processing) return;
+    processing = true;
+    render();
+
+    // 复用一个 worker（比每张创建/销毁更快）
+    let worker = null;
+    try{
+      worker = await Tesseract.createWorker("eng");
+      while(queue.length){
+        const f = queue.shift();
+        el("ocrHint").innerHTML = `<span class="hint">识别中：${escapeHtml(f.name || "image")}（剩余 ${queue.length} 张）…</span>`;
+        render();
+
+        const pre = await preprocessImageToBlob(f);
+        const { data } = await worker.recognize(pre);
+        const text = (data && data.text) ? data.text : "";
+
+        // 解析并导入
+        const parsed = parseUniUniFromText(text);
+        if(parsed.length){
+          addParsed(parsed, "OCR");
+        }else{
+          // 失败就把文本放到备用框，方便你手动清理后解析
+          el("txtRaw").value = (el("txtRaw").value ? (el("txtRaw").value + "\n\n") : "") + text.trim();
+        }
+      }
+      el("ocrHint").innerHTML = `<span class="hint" style="color:#0a7a2f;">批量识别完成 ✅（如果有少量没识别到的，已把 OCR 文本放到“备用文本框”里）</span>`;
+    }catch(e){
+      console.error(e);
+      el("ocrHint").innerHTML = `<span class="hint" style="color:#a40000;">OCR 失败：${escapeHtml(String(e))}</span>`;
+    }finally{
+      try{ if(worker) await worker.terminate(); }catch{}
+      processing = false;
+      render();
+    }
+  }
+
+  el("btnRunOcr").addEventListener("click", ()=>{
+    const files = el("fileImgs").files;
+    if(!files || !files.length) return alert("先选择截图（可多选，大概 6 张）。");
+    queue = Array.from(files);
+    processQueue();
+  });
+
+  // 备用：解析文本
+  el("btnParseText").addEventListener("click", ()=>{
+    const raw = el("txtRaw").value || "";
+    const parsed = parseUniUniFromText(raw);
+    if(!parsed.length) return alert("没解析到 UUS 分组/地址。你可以把 UUS 开头的行和地址行保留再试。");
+    addParsed(parsed, "TEXT");
+  });
+
+  // init
+  load();
+  render();
+</script>
 </body>
 </html>
