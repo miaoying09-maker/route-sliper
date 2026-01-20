@@ -3,54 +3,68 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>UniUni 批量截图识别（Google Maps / 自动勾选 / 简洁版）</title>
+  <title>UniUni 路线号+地址（简洁版）</title>
   <style>
-    :root { font-family: -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
-    body { margin:0; background:#f6f7fb; color:#111; }
-    .wrap { max-width: 900px; margin: 0 auto; padding: 12px; }
+    :root{ font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+    body{ margin:0; background:#f6f7fb; color:#111; }
+    .wrap{ max-width:900px; margin:0 auto; padding:12px; }
     .sticky{
-      position: sticky; top:0; z-index:10;
-      background: rgba(246,247,251,.96);
-      backdrop-filter: blur(10px);
+      position:sticky; top:0; z-index:10;
+      background:rgba(246,247,251,.96); backdrop-filter: blur(10px);
       border-bottom:1px solid #e6e8ef;
-      padding:10px 12px;
+      padding:12px;
       margin:-12px -12px 12px -12px;
     }
     .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
     .btn{
       border:1px solid #d5d9e6; background:#fff;
-      padding:11px 12px; border-radius: 14px; cursor:pointer;
-      font-size:14px; line-height:1;
+      padding:14px 14px; border-radius:16px;
+      cursor:pointer; font-size:16px; font-weight:800;
     }
     .btn.primary{ background:#111; color:#fff; border-color:#111; }
+    .btn.warn{ background:#fff6e5; border-color:#ffd69a; }
     .btn.danger{ background:#fff3f3; border-color:#ffd3d3; color:#a40000; }
-    .btn:disabled{ opacity:.5; cursor:not-allowed; }
-    .card{
-      background:#fff; border:1px solid #e6e8ef; border-radius: 16px;
-      padding:12px; box-shadow: 0 2px 10px rgba(0,0,0,.04);
-    }
-    .hint{ font-size:12px; color:#666; }
-    .pill{ font-size:12px; padding:3px 8px; border-radius:999px; border:1px solid #e6e8ef; background:#fafbff; }
-    .stat{ font-size:13px; color:#333; display:flex; gap:10px; flex-wrap:wrap; }
-    .progress{ height:8px; background:#e9ecf7; border-radius:999px; overflow:hidden; margin-top:8px; }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; }
+    .pill{ font-size:13px; padding:4px 10px; border-radius:999px; border:1px solid #e6e8ef; background:#fff; }
+    .hint{ font-size:12px; color:#666; line-height:1.35; }
+    .progress{ height:8px; background:#e9ecf7; border-radius:999px; overflow:hidden; margin-top:10px; }
     .bar{ height:100%; width:0%; background:#111; transition: width .2s; }
 
+    .card{ background:#fff; border:1px solid #e6e8ef; border-radius:18px; padding:12px; box-shadow:0 2px 10px rgba(0,0,0,.04); }
     .list{ display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+
     .item{
-      display:grid; grid-template-columns: 92px 1fr; gap:10px; align-items:stretch;
-      border:1px solid #e6e8ef; border-radius:16px; padding:10px; background:#fff;
+      display:grid; grid-template-columns: 108px 1fr; gap:12px;
+      border:1px solid #e6e8ef; border-radius:18px; padding:12px; background:#fff;
+      align-items:stretch;
     }
     .routeBox{
-      border-radius:14px; border:1px solid #e6e8ef; background:#fafbff;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      padding:8px;
+      border:1px solid #e6e8ef; background:#fafbff; border-radius:16px;
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
     }
-    .routeNum{ font-size:40px; font-weight:900; line-height:1; }
-    .routeTxt{ font-size:12px; color:#666; margin-top:6px; }
-    .addr{ font-size:15px; line-height:1.35; margin-top:4px; }
+    .routeNum{ font-size:44px; font-weight:950; line-height:1; }
+    .routeLab{ margin-top:6px; font-size:12px; color:#666; }
+
+    .addr{ font-size:16px; font-weight:700; line-height:1.25; margin-top:4px; }
+    .sub{ font-size:12px; color:#666; margin-top:6px; }
+    .tag{ font-size:12px; padding:3px 8px; border-radius:999px; border:1px solid #e6e8ef; background:#fff; }
     .meta{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-    .small{ font-size:12px; color:#666; margin-top:6px; }
-    textarea{ width:100%; box-sizing:border-box; border:1px solid #d5d9e6; border-radius:14px; padding:10px; font-size:14px; min-height:110px; }
+    .smallbtn{
+      border:1px solid #d5d9e6; background:#fff;
+      padding:10px 12px; border-radius:14px;
+      cursor:pointer; font-size:14px; font-weight:800;
+    }
+    .smallbtn.primary{ background:#111; color:#fff; border-color:#111; }
+
+    input[type="file"]{ width:100%; }
+    .edit{
+      width:100%; box-sizing:border-box;
+      border:1px solid #d5d9e6; border-radius:14px;
+      padding:10px; font-size:14px;
+      margin-top:8px;
+    }
+    details{ margin-top:10px; }
+    summary{ cursor:pointer; font-weight:800; }
   </style>
 </head>
 <body>
@@ -58,89 +72,90 @@
 
   <div class="sticky">
     <div class="row">
-      <button class="btn primary" id="btnNavNext">Google导航下一条未送（自动勾选）</button>
-      <button class="btn" id="btnCopyNext">复制下一条未送（自动勾选）</button>
+      <button class="btn primary" id="btnNavNext">Google导航下一条未送 ✅自动勾选</button>
+      <button class="btn" id="btnCopyNext">复制下一条未送 ✅自动勾选</button>
+      <button class="btn warn" id="btnUndo">撤销上一条</button>
       <button class="btn danger" id="btnClear">清空</button>
     </div>
 
     <div class="row" style="margin-top:10px;">
-      <div class="stat" id="statLine"></div>
-      <span class="pill" id="jobLine">待处理：0</span>
+      <span class="pill" id="stat">总数 0｜未送 0｜已送 0</span>
+      <span class="pill" id="job">待处理 0</span>
     </div>
-    <div class="progress"><div class="bar" id="progBar"></div></div>
+    <div class="progress"><div class="bar" id="bar"></div></div>
 
-    <div class="hint" style="margin-top:8px;">
-      用法（iPhone）：点“选择截图（可多选，约6张）” → 点“批量识别导入” → 送单时只点最上面的“Google导航下一条未送”。<br>
-      每点一次：打开 Google Maps 导航 + 这条自动变 ✅ 已送
+    <div class="hint" style="margin-top:10px;">
+      iPhone：点下面“选择截图(可多选，约6张)” → “批量导入” → 送单时只点最上面“Google导航下一条未送”。<br>
+      这版只保留：<b>路线号 + 地址</b>（不识别单号/姓名，减少干扰）。
     </div>
   </div>
 
   <div class="card">
-    <div class="row" style="justify-content:space-between;">
-      <div style="font-weight:900;">批量导入（更准 OCR）</div>
-      <span class="pill">Google Maps 默认</span>
+    <div style="font-weight:950; font-size:18px;">批量导入（更准确：分区识别）</div>
+    <div class="hint" style="margin-top:6px;">会把图片左边当“路线号区”，右边当“地址区”分别识别，准确率更高。</div>
+
+    <div class="row" style="margin-top:12px;">
+      <input type="file" id="files" accept="image/*" multiple />
+      <button class="btn primary" id="btnImport">批量导入</button>
     </div>
 
-    <div class="row" style="margin-top:10px;">
-      <input type="file" id="fileImgs" accept="image/*" multiple />
-      <button class="btn primary" id="btnRunOcr">批量识别导入</button>
-      <button class="btn" id="btnDedupe">去重</button>
-    </div>
-
-    <div class="hint" id="ocrHint" style="margin-top:10px;"></div>
-
-    <details style="margin-top:12px;">
-      <summary style="cursor:pointer; font-weight:800;">备用：粘贴文本再解析（可选）</summary>
-      <div class="hint" style="margin-top:8px;">如果某一张识别乱了，把 OCR 文本粘贴进来也能解析。</div>
-      <textarea id="txtRaw" placeholder="粘贴 OCR 文本（可选）"></textarea>
-      <div class="row" style="margin-top:10px;">
-        <button class="btn primary" id="btnParseText">解析导入</button>
+    <details>
+      <summary>识别设置（一般不用改）</summary>
+      <div class="hint" style="margin-top:8px;">如果你的截图左边路线号占比更大/更小，可以调一下。</div>
+      <div class="row" style="margin-top:8px;">
+        <span class="pill">路线号区域宽度：</span>
+        <select id="routeW" class="edit" style="max-width:180px;">
+          <option value="0.30">30%</option>
+          <option value="0.35" selected>35%</option>
+          <option value="0.40">40%</option>
+        </select>
+        <span class="pill">默认城市：</span>
+        <input id="defaultCity" class="edit" style="max-width:320px;" value="Pittsburgh, PA" />
       </div>
+      <div class="hint" style="margin-top:8px;">默认城市会在地址太短/缺城市州时自动补上，Google Maps 更好找。</div>
     </details>
+
+    <div class="hint" id="hint" style="margin-top:10px;"></div>
   </div>
 
   <div class="list" id="list"></div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
-  const LS_KEY = "uniuni_google_batch_v1";
-
-  let items = []; // {id, checked, route, tracking, address, createdAt, usedAt?}
+  // 只存：route + address + checked
+  const LS_KEY = "uniuni_route_addr_simple_v1";
+  let items = []; // {id, route, address, checked, createdAt}
   let queue = [];
   let processing = false;
+  let lastActionStack = []; // for undo (store item id)
 
   const el = id => document.getElementById(id);
   const listEl = el("list");
-  const statEl = el("statLine");
-  const progEl = el("progBar");
-  const jobEl = el("jobLine");
 
   function uid(){ return Math.random().toString(36).slice(2,9) + Date.now().toString(36); }
   function save(){ localStorage.setItem(LS_KEY, JSON.stringify(items)); }
   function load(){
-    try{
-      const raw = localStorage.getItem(LS_KEY);
-      items = raw ? JSON.parse(raw) : [];
-    }catch{ items = []; }
-  }
-  function escapeHtml(s){
-    return (s||"").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-  }
-  function normalizeAddress(s){
-    return (s||"").replace(/\s+/g," ").replace(/\s*,\s*/g,", ").trim();
-  }
-  function looksLikeAddress(line){
-    const s = (line||"").trim();
-    if (s.length < 8) return false;
-    const hasNumber = /\b\d{1,6}\b/.test(s);
-    const hasStreet = /\b(st|street|ave|avenue|rd|road|blvd|boulevard|dr|drive|ln|lane|way|ct|court|pl|place|pkwy|parkway|hwy|highway|cir|circle|trl|trail)\b/i.test(s);
-    const hasCityStateZip = /\bPittsburgh\b.*\bPA\b/i.test(s) || /\b[A-Z]{2}\s*\d{5}(-\d{4})?\b/.test(s);
-    return hasNumber && (hasStreet || hasCityStateZip);
+    try{ items = JSON.parse(localStorage.getItem(LS_KEY) || "[]"); }
+    catch{ items = []; }
   }
 
-  // Google Maps 单点导航（iPhone 也能打开 Google Maps App 或网页）
+  function esc(s){
+    return (s||"").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+  function norm(s){
+    return (s||"").replace(/\s+/g," ").replace(/\s*,\s*/g,", ").trim();
+  }
+
+  function looksLikeAddressLine(s){
+    const t = (s||"").trim();
+    if(t.length < 8) return false;
+    const hasNo = /\b\d{1,6}\b/.test(t);
+    const hasStreet = /\b(st|street|ave|avenue|rd|road|blvd|boulevard|dr|drive|ln|lane|way|ct|court|pl|place|pkwy|parkway|hwy|highway|cir|circle|trl|trail)\b/i.test(t);
+    return hasNo && (hasStreet || /,\s*[A-Za-z]+\s*,?\s*[A-Z]{2}\b/.test(t) || /\b[A-Z]{2}\s*\d{5}\b/.test(t));
+  }
+
+  // Google Maps 单点导航
   function navUrlGoogle(dest){
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=driving`;
   }
@@ -154,9 +169,8 @@
     }
   }
 
-  // ===== 更准：OCR 前预处理（放大 + 灰度 + 对比 + 二值化）=====
-  async function preprocessImageToBlob(fileOrBlob){
-    const blob = fileOrBlob;
+  // ---------- 图像预处理：让字更黑 ----------
+  async function preprocess(blob){
     const img = new Image();
     img.decoding = "async";
     const url = URL.createObjectURL(blob);
@@ -164,33 +178,29 @@
     await img.decode();
     URL.revokeObjectURL(url);
 
-    // 放大一点（对 UniUni 白底黑字更准）
     const scale = Math.min(2.2, Math.max(1.4, 1700 / Math.max(img.width, img.height)));
     const w = Math.round(img.width * scale);
     const h = Math.round(img.height * scale);
 
-    const canvas = document.createElement("canvas");
-    canvas.width = w; canvas.height = h;
-    const ctx = canvas.getContext("2d", { willReadFrequently:true });
-
+    const cv = document.createElement("canvas");
+    cv.width = w; cv.height = h;
+    const ctx = cv.getContext("2d", { willReadFrequently:true });
     ctx.drawImage(img, 0, 0, w, h);
 
     const im = ctx.getImageData(0,0,w,h);
     const d = im.data;
 
-    const contrast = 1.38;
+    const contrast = 1.40;
     for(let i=0;i<d.length;i+=4){
-      const r=d[i], g=d[i+1], b=d[i+2];
-      let gray = (0.299*r + 0.587*g + 0.114*b);
+      let gray = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
       gray = (gray - 128) * contrast + 128;
       d[i]=d[i+1]=d[i+2]=gray;
     }
 
-    // 阈值：抽样估计平均亮度，阈值略偏低让字更黑
     let sum=0,cnt=0;
     for(let i=0;i<d.length;i+=48*4){ sum += d[i]; cnt++; }
     const avg = sum / Math.max(1,cnt);
-    const thr = Math.max(108, Math.min(178, avg - 12));
+    const thr = Math.max(108, Math.min(180, avg - 12));
 
     for(let i=0;i<d.length;i+=4){
       const v=d[i];
@@ -199,111 +209,108 @@
     }
     ctx.putImageData(im,0,0);
 
-    return await new Promise(res => canvas.toBlob(res, "image/png", 1.0));
+    return { canvas: cv, width: w, height: h };
   }
 
-  // ===== 按 UUS 分组，提取 route + tracking + address =====
-  function parseUniUniFromText(raw){
-    const lines = (raw||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-
-    const idxs = [];
-    for(let i=0;i<lines.length;i++){
-      if(/^UUS[0-9A-Z]{10,}$/i.test(lines[i])) idxs.push(i);
-    }
-    if(!idxs.length) return [];
-
-    const blocks = [];
-    for(let b=0;b<idxs.length;b++){
-      const s = idxs[b];
-      const e = (b+1<idxs.length)? idxs[b+1] : lines.length;
-      blocks.push(lines.slice(s,e));
-    }
-
-    const out = [];
-    for(const blk of blocks){
-      const text = blk.join(" ");
-      const tracking = (blk.find(l=>/^UUS[0-9A-Z]{10,}$/i.test(l))||"").toUpperCase();
-
-      // 路线号：优先抓“单独一行三位数”
-      let route = "";
-      const routeLine = blk.find(l => /^\d{3}$/.test(l));
-      if(routeLine) route = routeLine;
-      if(!route){
-        const m = text.match(/\b(1\d{2}|[2-9]\d{2})\b/);
-        if(m) route = m[1];
-      }
-
-      // 地址：找最像地址的行 + 合并下一行 city/state
-      const cand = blk.filter(looksLikeAddress);
-      let addr = cand[0] || "";
-
-      if(addr){
-        const i = blk.indexOf(addr);
-        const next = blk[i+1] || "";
-        const isCity = /\bPittsburgh\b.*\bPA\b/i.test(next) || /\b[A-Z]{2}\s*\d{5}/.test(next);
-        if(isCity && !/\bPA\b/i.test(addr) && next.length <= 60){
-          addr = `${addr}, ${next}`;
-        }
-      }else{
-        const l2 = blk.find(l => /\b\d{1,6}\b/.test(l) && l.length >= 10);
-        if(l2) addr = l2;
-      }
-
-      addr = normalizeAddress(addr);
-      if(addr){
-        out.push({ route, tracking, address: addr });
-      }
-    }
-    return out;
+  function cropToBlob(canvas, sx, sy, sw, sh){
+    const cv = document.createElement("canvas");
+    cv.width = Math.max(1, Math.round(sw));
+    cv.height = Math.max(1, Math.round(sh));
+    const ctx = cv.getContext("2d");
+    ctx.drawImage(canvas, sx, sy, sw, sh, 0, 0, cv.width, cv.height);
+    return new Promise(res => cv.toBlob(res, "image/png", 1.0));
   }
 
-  function addParsed(parsed, source){
-    const now = Date.now();
-    const newOnes = parsed.map(p => ({
+  // 从文本里提取路线号：优先 3 位数；如果有 2 位数也允许
+  function extractRoute(text){
+    const t = (text||"").replace(/\s+/g," ").trim();
+    // 常见：161 162 528 ...
+    let m = t.match(/\b(\d{3})\b/);
+    if(m) return m[1];
+    m = t.match(/\b(\d{2})\b/);
+    if(m) return m[1];
+    // 有时 OCR 会把 528 识别成 5 28 或 52 8
+    const digits = (t.match(/\d/g) || []).join("");
+    if(digits.length >= 2 && digits.length <= 4) return digits;
+    return "";
+  }
+
+  // 从右侧文本里提取地址：找第一条像地址的行；否则拼最合理的一行
+  function extractAddress(text){
+    const lines = (text||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+
+    // 先找最像地址的一行
+    let addr = lines.find(looksLikeAddressLine) || "";
+
+    // 如果被切断成两行：把下一行（城市州）拼上
+    if(addr){
+      const i = lines.indexOf(addr);
+      const next = lines[i+1] || "";
+      const isCity = /\b[A-Za-z]+\b.*\b[A-Z]{2}\b/.test(next) || /\b[A-Z]{2}\s*\d{5}\b/.test(next);
+      if(isCity && next.length <= 50 && !/\b[A-Z]{2}\b/.test(addr)){
+        addr = addr + ", " + next;
+      }
+      return norm(addr);
+    }
+
+    // 兜底：找包含门牌号的最长一行
+    const withNo = lines.filter(l => /\b\d{1,6}\b/.test(l));
+    if(withNo.length){
+      withNo.sort((a,b)=>b.length-a.length);
+      return norm(withNo[0]);
+    }
+
+    // 最终兜底：取最长一行
+    if(lines.length){
+      lines.sort((a,b)=>b.length-a.length);
+      return norm(lines[0]);
+    }
+    return "";
+  }
+
+  function addItem(route, address){
+    route = (route||"").trim();
+    address = norm(address||"");
+    if(!address) return;
+
+    // 如果路线号没识别到，显示 --
+    const it = {
       id: uid(),
-      checked: false, // 默认未送，适合你按“导航下一条未送”顺着点
-      route: p.route || "",
-      tracking: p.tracking || "",
-      address: normalizeAddress(p.address),
-      source,
-      createdAt: now
-    })).filter(x => x.address);
-
-    items = newOnes.concat(items);
-    save();
-    render();
+      route: route || "--",
+      address,
+      checked: false,
+      createdAt: Date.now()
+    };
+    items.unshift(it);
   }
 
   function dedupe(){
     const seen = new Set();
     const out = [];
     for(const it of items){
-      const key = (it.route+"|"+it.tracking+"|"+it.address).toLowerCase();
+      const key = (it.route + "|" + it.address).toLowerCase();
       if(seen.has(key)) continue;
       seen.add(key);
       out.push(it);
     }
     items = out;
-    save();
-    render();
   }
 
-  function render(){
+  function updateTop(){
     const total = items.length;
     const done = items.filter(x=>x.checked).length;
     const todo = total - done;
+    el("stat").textContent = `总数 ${total}｜未送 ${todo}｜已送 ${done}`;
+    el("job").textContent = `待处理 ${queue.length}${processing ? "（识别中）" : ""}`;
+    el("bar").style.width = total ? Math.round(done/total*100) + "%" : "0%";
+  }
 
-    statEl.innerHTML = `
-      <span class="pill">总数：<b>${total}</b></span>
-      <span class="pill">未送：<b>${todo}</b></span>
-      <span class="pill">已送：<b>${done}</b></span>
-    `;
-    progEl.style.width = total ? Math.round(done/total*100) + "%" : "0%";
-    jobEl.textContent = `待处理：${queue.length}${processing ? "（识别中）" : ""}`;
-
+  function render(){
+    updateTop();
     listEl.innerHTML = "";
+
     if(!items.length){
-      listEl.innerHTML = `<div class="card"><div class="hint">还没有导入数据。先选择 6 张左右 UniUni 截图 → 点“批量识别导入”。</div></div>`;
+      listEl.innerHTML = `<div class="card"><div class="hint">还没有数据。先选择截图 → 批量导入。</div></div>`;
       return;
     }
 
@@ -312,19 +319,27 @@
       div.className = "item";
       div.innerHTML = `
         <div class="routeBox">
-          <div class="routeNum">${escapeHtml(it.route || "--")}</div>
-          <div class="routeTxt">路线号</div>
+          <div class="routeNum">${esc(it.route)}</div>
+          <div class="routeLab">路线号</div>
         </div>
         <div>
           <div class="meta">
-            <span class="pill">${it.checked ? "✅ 已送" : "⬜ 未送"}</span>
-            ${it.tracking ? `<span class="pill">${escapeHtml(it.tracking)}</span>` : ""}
-            <button class="btn primary" data-act="nav" data-id="${it.id}">导航（自动勾选）</button>
-            <button class="btn" data-act="copy" data-id="${it.id}">复制地址</button>
-            <button class="btn" data-act="toggle" data-id="${it.id}">${it.checked ? "取消勾选" : "手动勾选"}</button>
+            <span class="tag">${it.checked ? "✅ 已送" : "⬜ 未送"}</span>
+            <button class="smallbtn primary" data-act="nav" data-id="${it.id}">导航（自动勾选）</button>
+            <button class="smallbtn" data-act="copy" data-id="${it.id}">复制地址</button>
+            <button class="smallbtn" data-act="toggle" data-id="${it.id}">${it.checked ? "取消勾选" : "手动勾选"}</button>
+            <button class="smallbtn" data-act="edit" data-id="${it.id}">修改</button>
           </div>
-          <div class="addr">${escapeHtml(it.address)}</div>
-          <div class="small">建议：你主要用顶部“Google导航下一条未送”顺着送。</div>
+          <div class="addr">${esc(it.address)}</div>
+          <div class="sub">如果路线号显示 “--”，点“修改”手动补一下即可（只改这一条，不影响其他）。</div>
+          <div class="editBox" id="edit-${it.id}" style="display:none;">
+            <input class="edit" placeholder="路线号" value="${esc(it.route)}" data-k="route" data-id="${it.id}">
+            <input class="edit" placeholder="地址" value="${esc(it.address)}" data-k="address" data-id="${it.id}">
+            <div class="row" style="margin-top:8px;">
+              <button class="smallbtn primary" data-act="save" data-id="${it.id}">保存</button>
+              <button class="smallbtn" data-act="cancel" data-id="${it.id}">取消</button>
+            </div>
+          </div>
         </div>
       `;
       listEl.appendChild(div);
@@ -339,39 +354,59 @@
 
         if(act==="nav"){
           const url = navUrlGoogle(it.address);
-          it.checked = true; // 导航后自动勾选 ✅
-          it.usedAt = Date.now();
+          it.checked = true;             // 导航后自动勾选 ✅
+          lastActionStack.push(id);
           save(); render();
           window.open(url, "_blank");
         }else if(act==="copy"){
           await copyText(it.address);
         }else if(act==="toggle"){
           it.checked = !it.checked;
+          lastActionStack.push(id);
+          save(); render();
+        }else if(act==="edit"){
+          el("edit-"+id).style.display = "block";
+        }else if(act==="cancel"){
+          el("edit-"+id).style.display = "none";
+        }else if(act==="save"){
+          const r = document.querySelector(`input[data-id="${id}"][data-k="route"]`).value.trim();
+          const a = document.querySelector(`input[data-id="${id}"][data-k="address"]`).value.trim();
+          it.route = r || "--";
+          it.address = norm(a);
+          el("edit-"+id).style.display = "none";
           save(); render();
         }
       }, { once:true });
     });
   }
 
-  // ===== 顶部快捷按钮 =====
+  // -------- 顶部按钮：导航/复制下一条未送 --------
   el("btnNavNext").addEventListener("click", ()=>{
     const next = items.find(x=>!x.checked);
     if(!next) return alert("没有未送的了（都已勾选）。");
-    const url = navUrlGoogle(next.address);
-    next.checked = true; // 导航后自动勾选 ✅
-    next.usedAt = Date.now();
+    next.checked = true;
+    lastActionStack.push(next.id);
     save(); render();
-    window.open(url, "_blank");
+    window.open(navUrlGoogle(next.address), "_blank");
   });
 
   el("btnCopyNext").addEventListener("click", async ()=>{
     const next = items.find(x=>!x.checked);
     if(!next) return alert("没有未送的了（都已勾选）。");
     await copyText(next.address);
-    next.checked = true; // 复制后也自动勾选（你送单更省事）
-    next.usedAt = Date.now();
+    next.checked = true;
+    lastActionStack.push(next.id);
     save(); render();
-    alert("已复制下一条未送，并自动勾选。");
+    alert("已复制并自动勾选。");
+  });
+
+  el("btnUndo").addEventListener("click", ()=>{
+    const lastId = lastActionStack.pop();
+    if(!lastId) return alert("没有可撤销的操作。");
+    const it = items.find(x=>x.id===lastId);
+    if(!it) return;
+    it.checked = false;
+    save(); render();
   });
 
   el("btnClear").addEventListener("click", ()=>{
@@ -379,65 +414,92 @@
     items = [];
     queue = [];
     processing = false;
-    save();
-    el("txtRaw").value = "";
-    render();
+    lastActionStack = [];
+    save(); render();
   });
 
-  el("btnDedupe").addEventListener("click", ()=>dedupe());
-
-  // ===== 批量 OCR 队列处理 =====
+  // -------- 批量识别导入：两区 OCR（路线号区 + 地址区）--------
   async function processQueue(){
     if(processing) return;
     processing = true;
     render();
 
-    // 复用一个 worker（比每张创建/销毁更快）
-    let worker = null;
+    let workerDigits = null;
+    let workerAddr = null;
+
     try{
-      worker = await Tesseract.createWorker("eng");
+      workerDigits = await Tesseract.createWorker("eng");
+      workerAddr = await Tesseract.createWorker("eng");
+
+      // 路线号 worker：只要数字
+      await workerDigits.setParameters({
+        tessedit_char_whitelist: "0123456789",
+        preserve_interword_spaces: "1"
+      });
+
+      // 地址 worker：允许数字字母空格逗号点号
+      await workerAddr.setParameters({
+        tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ,.-/#",
+        preserve_interword_spaces: "1"
+      });
+
       while(queue.length){
         const f = queue.shift();
-        el("ocrHint").innerHTML = `<span class="hint">识别中：${escapeHtml(f.name || "image")}（剩余 ${queue.length} 张）…</span>`;
+        el("hint").innerHTML = `<span class="hint">识别中：${esc(f.name || "image")}（剩余 ${queue.length} 张）…</span>`;
         render();
 
-        const pre = await preprocessImageToBlob(f);
-        const { data } = await worker.recognize(pre);
-        const text = (data && data.text) ? data.text : "";
+        const routeFrac = parseFloat(el("routeW").value || "0.35");
+        const defaultCity = (el("defaultCity").value || "Pittsburgh, PA").trim();
 
-        // 解析并导入
-        const parsed = parseUniUniFromText(text);
-        if(parsed.length){
-          addParsed(parsed, "OCR");
-        }else{
-          // 失败就把文本放到备用框，方便你手动清理后解析
-          el("txtRaw").value = (el("txtRaw").value ? (el("txtRaw").value + "\n\n") : "") + text.trim();
+        const { canvas, width, height } = await preprocess(f);
+
+        // 1) 左侧路线号区域
+        const rBlob = await cropToBlob(canvas, 0, 0, width * routeFrac, height);
+
+        // 2) 右侧地址区域（留一点左边边距，避免把大号数字带进去）
+        const ax = Math.round(width * routeFrac);
+        const aBlob = await cropToBlob(canvas, ax, 0, width - ax, height);
+
+        const rRes = await workerDigits.recognize(rBlob);
+        const aRes = await workerAddr.recognize(aBlob);
+
+        const route = extractRoute((rRes.data && rRes.data.text) ? rRes.data.text : "");
+        let addr = extractAddress((aRes.data && aRes.data.text) ? aRes.data.text : "");
+
+        // 如果地址太短/缺城市州：补默认城市，Google 更好找
+        if(addr && addr.length < 12 && defaultCity) addr = `${addr}, ${defaultCity}`;
+        if(addr && defaultCity && !/\b[A-Z]{2}\b/.test(addr) && !/,\s*[A-Za-z]+\s*,?\s*[A-Z]{2}\b/.test(addr)){
+          // 没有州缩写时也补
+          addr = `${addr}, ${defaultCity}`;
         }
+
+        // 一张截图可能有多条卡片：这一步我们做“尽量稳”的策略
+        // ——先加入 1 条（你反馈不准我们再升级到自动分割成多卡片）
+        addItem(route, addr);
       }
-      el("ocrHint").innerHTML = `<span class="hint" style="color:#0a7a2f;">批量识别完成 ✅（如果有少量没识别到的，已把 OCR 文本放到“备用文本框”里）</span>`;
+
+      dedupe();
+      save();
+      el("hint").innerHTML = `<span class="hint" style="color:#0a7a2f;">导入完成 ✅（如果某条路线号是 --，点“修改”补一下即可）</span>`;
+      render();
+
     }catch(e){
       console.error(e);
-      el("ocrHint").innerHTML = `<span class="hint" style="color:#a40000;">OCR 失败：${escapeHtml(String(e))}</span>`;
+      el("hint").innerHTML = `<span class="hint" style="color:#a40000;">识别失败：${esc(String(e))}</span>`;
+      render();
     }finally{
-      try{ if(worker) await worker.terminate(); }catch{}
+      try{ if(workerDigits) await workerDigits.terminate(); }catch{}
+      try{ if(workerAddr) await workerAddr.terminate(); }catch{}
       processing = false;
       render();
     }
   }
 
-  el("btnRunOcr").addEventListener("click", ()=>{
-    const files = el("fileImgs").files;
+  el("btnImport").addEventListener("click", ()=>{
+    const files = el("files").files;
     if(!files || !files.length) return alert("先选择截图（可多选，大概 6 张）。");
     queue = Array.from(files);
     processQueue();
-  });
-
-  // 备用：解析文本
-  el("btnParseText").addEventListener("click", ()=>{
-    const raw = el("txtRaw").value || "";
-    const parsed = parseUniUniFromText(raw);
-    if(!parsed.length) return alert("没解析到 UUS 分组/地址。你可以把 UUS 开头的行和地址行保留再试。");
-    addParsed(parsed, "TEXT");
   });
 
   // init
